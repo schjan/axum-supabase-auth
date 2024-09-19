@@ -36,6 +36,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Run gotrue Server
+        run: docker compose -f ./tests/setup/docker-compose.yml up -d --build
+
       - name: Rust setup
         uses: dtolnay/rust-toolchain@stable
 
