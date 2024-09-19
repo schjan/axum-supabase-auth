@@ -53,18 +53,27 @@ impl Api {
             request = request.bearer_auth(token);
         }
 
-        let response = request.send().await?.error_for_status().map_err(|err| {
-            if let Some(status) = err.status() {
-                warn!(%err,
-                    method = %method,
-                    endpoint = %endpoint,
-                    status = status.as_u16(),
-                    "Request failed");
-                ApiError::HttpError(err, status)
-            } else {
-                ApiError::Unknown(err)
+        let response = request.send().await?;
+
+        match response.error_for_status_ref() {
+            Ok(_) => {}
+            Err(err) => {
+                return if let Some(status) = err.status() {
+                    let body: ApiErrorResponse = response.json().await.unwrap_or_default();
+
+                    warn!(%err,
+                        method = %method,
+                        endpoint = %endpoint,
+                        body = ?body,
+                        status = status.as_u16(),
+                        "Request failed");
+
+                    Err(ApiError::HttpError(err, status))
+                } else {
+                    Err(ApiError::Unknown(err))
+                }
             }
-        })?;
+        };
 
         let result = response.json::<T>().await?;
         Ok(result)
@@ -278,4 +287,25 @@ pub enum ApiError {
     Unknown(#[from] reqwest::Error),
     #[error("URL parsing error: {0}")]
     UrlError(#[from] url::ParseError),
+}
+
+#[derive(Debug, Deserialize, Default)]
+pub struct ApiErrorResponse {
+    pub code: u16,
+    pub error_code: ApiErrorCode,
+    pub msg: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ApiErrorCode {
+    Unknown,
+    SignupDisabled,
+    UserAlreadyExists,
+}
+
+impl Default for ApiErrorCode {
+    fn default() -> Self {
+        Self::Unknown
+    }
 }
