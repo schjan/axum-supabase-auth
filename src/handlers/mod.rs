@@ -1,7 +1,7 @@
 use crate::middleware::{AuthState, CookieConfig};
 use crate::{AuthTypes, Session};
 use axum::extract::FromRef;
-use axum::routing::post;
+use axum::routing::{get, post};
 use axum::Router;
 use axum_extra::extract::cookie::{Cookie, SameSite};
 use axum_extra::extract::CookieJar;
@@ -17,8 +17,8 @@ where
     Router::new()
         .route("/login", post(post::login))
         .route("/logout", post(post::logout))
-    // .route("/login/github", get(get::login_github))
-    // .route("/login/confirm", get(get::login_confirm))
+        .route("/login/github", get(get::login_github))
+        .route("/login/confirm", get(get::login_confirm))
 }
 
 mod post {
@@ -38,13 +38,6 @@ mod post {
         pub email: String,
         pub password: String,
         pub next: Option<String>,
-    }
-
-    // This allows us to extract the "next" field from the query string. We use this
-    // to redirect after log in.
-    #[derive(Debug, Deserialize)]
-    pub struct NextUrl {
-        next: Option<String>,
     }
 
     pub async fn login<T>(
@@ -77,20 +70,25 @@ mod post {
     }
 
     pub async fn logout<T>(
-        State(auth): State<AuthState<T>>,
+        State(state): State<AuthState<T>>,
+        jar: CookieJar,
         MaybeUser(claims): MaybeUser<T>,
     ) -> impl IntoResponse
     where
         T: AuthTypes,
     {
-        let claims = match claims {
+        let _claims = match claims {
             Some(claims) => claims,
             None => return Redirect::to("/login").into_response(),
         };
 
-        // TODO: logout here :D
+        // TODO: logout API call.
+        // let client = state.auth().with_token()
 
-        Redirect::to("/login").into_response()
+        let jar = jar.remove(state.cookies().refresh_cookie_name().to_string());
+        let jar = jar.remove(state.cookies().auth_cookie_name().to_string());
+
+        (jar, Redirect::to("/login")).into_response()
     }
 }
 
