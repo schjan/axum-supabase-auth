@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use std::fmt::{Debug, Formatter};
 
-#[derive(Clone, Deserialize)]
+#[derive(Clone, Deserialize, PartialEq, Eq)]
 pub struct Session {
     pub access_token: String,
     pub token_type: String,
@@ -28,7 +28,7 @@ pub enum EmailOrPhone {
     Phone(String),
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
 pub struct User {
     pub id: String,
     pub email: String,

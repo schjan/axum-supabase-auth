@@ -1,0 +1,19 @@
+---
+# https://taskfile.dev
+version: "3"
+
+tasks:
+  start-test-gotrue:
+    desc: Starts Docker Go True Servers
+    cmds:
+      - docker compose -f ./tests/setup/docker-compose.yml up -d --build
+
+  stop-test-gotrue:
+    cmds:
+      - docker compose -f ./tests/setup/docker-compose.yml down
+
+  integration-test:
+    deps:
+      - start-test-gotrue
+    cmds:
+      - cargo test

@@ -1,3 +1,4 @@
+use crate::api::{SignUpError, SignUpResponse};
 use crate::auth::api::Api;
 use crate::auth::ClientError;
 use crate::{Auth, EmailOrPhone, OAuthRequest, OAuthResponse, Session, SessionAuth, User};
@@ -31,12 +32,10 @@ impl Auth for AuthService {
         &self,
         email_or_phone: EmailOrPhone,
         password: impl AsRef<str>,
-    ) -> Result<Session, ClientError> {
+    ) -> Result<SignUpResponse, ClientError> {
         match self.api.sign_up(email_or_phone, password).await {
             Ok(session) => Ok(session),
-            Err(e) if e.is_status() && e.status().unwrap() == StatusCode::UNPROCESSABLE_ENTITY => {
-                Err(ClientError::AlreadySignedUp)
-            }
+            Err(SignUpError::UnableToSignUp) => Err(ClientError::AlreadySignedUp),
             Err(e) => {
                 error!("Error signing up: {:?}", e);
                 Err(ClientError::InternalError)

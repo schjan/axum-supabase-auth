@@ -1,8 +1,9 @@
+use crate::api::SignUpResponse;
 use crate::{EmailOrPhone, OAuthRequest, OAuthResponse, Session, User};
 use std::future::Future;
 use thiserror::Error;
 
-mod api;
+pub mod api;
 pub mod service;
 pub mod types;
 
@@ -11,7 +12,7 @@ pub trait Auth: Clone + Send + Sync + 'static {
         &self,
         email_or_phone: EmailOrPhone,
         password: impl AsRef<str> + Send,
-    ) -> impl Future<Output = Result<Session, ClientError>> + Send;
+    ) -> impl Future<Output = Result<SignUpResponse, ClientError>> + Send;
     fn sign_in(
         &self,
         email_or_phone: EmailOrPhone,
