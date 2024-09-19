@@ -35,6 +35,8 @@ impl Api {
         }
     }
 
+    /// Register a new user.
+    /// Returns a Session if autoconfirm is enabled for the instance, else a Session.
     #[instrument(skip(self, password), fields(user_id))]
     pub async fn sign_up(
         &self,
@@ -56,8 +58,6 @@ impl Api {
         };
 
         let response: SignUpResponse = response.trace_error_for_status().await?.json().await?;
-
-        // Span::current().record("user_id", &response.user.id);
 
         Ok(response)
     }
@@ -247,6 +247,15 @@ impl SignUpResponse {
 
     pub fn user(self) -> Option<User> {
         self.into()
+    }
+}
+
+impl AsRef<User> for SignUpResponse {
+    fn as_ref(&self) -> &User {
+        match self.inner {
+            Either::Left(ref user) => user,
+            Either::Right(ref session) => &session.user,
+        }
     }
 }
 

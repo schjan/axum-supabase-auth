@@ -1,7 +1,7 @@
 use crate::helpers::spawn_test;
 use anyhow::bail;
 use axum_supabase_auth::api::SignUpError::UnableToSignUp;
-use axum_supabase_auth::{EmailOrPhone, Session};
+use axum_supabase_auth::{EmailOrPhone, Session, User};
 use fake::faker::internet::en::{FreeEmail, Password};
 use fake::Fake;
 
@@ -18,6 +18,8 @@ async fn can_sign_up_autoconfirm() -> anyhow::Result<()> {
     let result = client
         .sign_up(EmailOrPhone::Email(email.clone()), password)
         .await?;
+
+    assert_eq!(AsRef::<User>::as_ref(&result).email, email);
     if let Some(session) = result.session() {
         assert_eq!(session.user.email, email);
     } else {
@@ -54,6 +56,8 @@ async fn sign_up() -> anyhow::Result<()> {
     let result = client
         .sign_up(EmailOrPhone::Email(email.clone()), password)
         .await?;
+
+    assert_eq!(AsRef::<User>::as_ref(&result).email, email);
     if let Some(user) = result.user() {
         assert_eq!(user.email, email);
     } else {
