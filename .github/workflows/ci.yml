@@ -48,8 +48,9 @@ jobs:
         run: |
           cargo tarpaulin --verbose --all-features --workspace --timeout 120 --out xml
 
-      - name: Coveralls
-        uses: coverallsapp/github-action@v2
+      - uses: codecov/codecov-action@v4
+        with:
+          fail_ci_if_error: true
 
   fmt:
     name: Rust fmt
