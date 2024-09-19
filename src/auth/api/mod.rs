@@ -1,7 +1,7 @@
 use super::types::*;
 use bon::bon;
 use either::Either;
-use oauth2::{url, PkceCodeChallenge, PkceCodeVerifier};
+use oauth2::{PkceCodeChallenge, PkceCodeVerifier};
 use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::{Client, Method, StatusCode, Url};
 use serde::de::DeserializeOwned;
