@@ -1,11 +1,13 @@
 use super::types::*;
+use either::Either;
 use oauth2::{PkceCodeChallenge, PkceCodeVerifier};
 use reqwest::header::{HeaderMap, HeaderValue};
-use reqwest::{Client, Url};
-use serde::Serialize;
+use reqwest::{Client, StatusCode, Url};
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::fmt::Display;
 use std::time::Duration;
+use thiserror::Error;
 use tracing::{error, instrument, Span};
 
 #[derive(Clone)]
@@ -38,22 +40,24 @@ impl Api {
         &self,
         email_or_phone: EmailOrPhone,
         password: impl AsRef<str> + Sized,
-    ) -> Result<Session, reqwest::Error> {
+    ) -> Result<SignUpResponse, SignUpError> {
         let endpoint = self.url.join("signup").unwrap();
 
-        let response: Session = self
+        let response = self
             .client
             .post(endpoint)
             .headers(self.headers.clone())
             .json(&self.sign_in_up_body(email_or_phone, password))
             .send()
-            .await?
-            .trace_error_for_status()
-            .await?
-            .json()
             .await?;
 
-        Span::current().record("user_id", &response.user.id);
+        if response.status() == StatusCode::UNPROCESSABLE_ENTITY {
+            return Err(SignUpError::UnableToSignUp);
+        };
+
+        let response: SignUpResponse = response.trace_error_for_status().await?.json().await?;
+
+        // Span::current().record("user_id", &response.user.id);
 
         Ok(response)
     }
@@ -227,6 +231,43 @@ impl Api {
 
         Ok(response)
     }
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(transparent)]
+pub struct SignUpResponse {
+    #[serde(with = "either::serde_untagged")]
+    inner: Either<User, Session>,
+}
+
+impl SignUpResponse {
+    pub fn session(self) -> Option<Session> {
+        self.into()
+    }
+
+    pub fn user(self) -> Option<User> {
+        self.into()
+    }
+}
+
+impl From<SignUpResponse> for Option<User> {
+    fn from(val: SignUpResponse) -> Self {
+        val.inner.left()
+    }
+}
+
+impl From<SignUpResponse> for Option<Session> {
+    fn from(val: SignUpResponse) -> Self {
+        val.inner.right()
+    }
+}
+
+#[derive(Debug, Error)]
+pub enum SignUpError {
+    #[error("Signups not allowed for this instance or user already existing")]
+    UnableToSignUp,
+    #[error(transparent)]
+    Unknown(#[from] reqwest::Error),
 }
 
 trait TraceErrorForStatus: Sized {

@@ -4,6 +4,7 @@ pub mod middleware;
 
 use crate::handlers::auth_router;
 use crate::middleware::{AuthState, CookieConfig, Decoder};
+pub use auth::api;
 pub use auth::service::*;
 pub use auth::types::*;
 pub use auth::{Auth, SessionAuth};
