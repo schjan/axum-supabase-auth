@@ -1,4 +1,4 @@
-use crate::api::{SignUpError, SignUpResponse};
+use crate::api::{ApiError, SignUpResponse};
 use crate::auth::api::Api;
 use crate::auth::ClientError;
 use crate::{Auth, EmailOrPhone, OAuthRequest, OAuthResponse, Session, SessionAuth, User};
@@ -35,7 +35,9 @@ impl Auth for AuthService {
     ) -> Result<SignUpResponse, ClientError> {
         match self.api.sign_up(email_or_phone, password).await {
             Ok(session) => Ok(session),
-            Err(SignUpError::UnableToSignUp) => Err(ClientError::AlreadySignedUp),
+            Err(ApiError::HttpError(_, StatusCode::UNPROCESSABLE_ENTITY)) => {
+                Err(ClientError::AlreadySignedUp)
+            }
             Err(e) => {
                 error!("Error signing up: {:?}", e);
                 Err(ClientError::InternalError)
@@ -50,7 +52,7 @@ impl Auth for AuthService {
     ) -> Result<Session, ClientError> {
         match self.api.sign_in(email_or_phone, password).await {
             Ok(session) => Ok(session),
-            Err(e) if e.is_status() && e.status().unwrap() == StatusCode::BAD_REQUEST => {
+            Err(ApiError::HttpError(_, StatusCode::BAD_REQUEST)) => {
                 Err(ClientError::WrongCredentials)
             }
             Err(e) => {
@@ -147,7 +149,7 @@ impl SessionAuth for SessionAuthService {
     async fn list_users(&self) -> Result<Vec<User>, ClientError> {
         match self.auth.api.list_users(&self.access_token).await {
             Ok(users) => Ok(users.users),
-            Err(e) if e.is_status() && e.status().unwrap() == StatusCode::FORBIDDEN => {
+            Err(ApiError::HttpError(_, StatusCode::FORBIDDEN)) => {
                 Err(ClientError::WrongCredentials)
             }
             Err(e) => {

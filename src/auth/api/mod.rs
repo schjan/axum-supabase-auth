@@ -1,20 +1,74 @@
 use super::types::*;
+use bon::bon;
 use either::Either;
-use oauth2::{PkceCodeChallenge, PkceCodeVerifier};
+use oauth2::{url, PkceCodeChallenge, PkceCodeVerifier};
 use reqwest::header::{HeaderMap, HeaderValue};
-use reqwest::{Client, StatusCode, Url};
+use reqwest::{Client, Method, StatusCode, Url};
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::fmt::Display;
+use std::sync::Arc;
 use std::time::Duration;
 use thiserror::Error;
-use tracing::{error, instrument, Span};
+use tracing::{error, instrument, warn};
 
 #[derive(Clone)]
 pub struct Api {
     url: Url,
     client: Client,
-    headers: HeaderMap,
+    headers: Arc<HeaderMap>,
+}
+
+#[bon]
+impl Api {
+    #[builder(finish_fn=send)]
+    async fn send_request<T, B>(
+        &self,
+        #[builder(start_fn)] method: Method,
+        #[builder(start_fn)] endpoint: &str,
+        query: Option<&[(&str, &str)]>,
+        body: Option<&B>,
+        access_token: Option<&str>,
+    ) -> Result<T, ApiError>
+    where
+        T: DeserializeOwned,
+        B: Serialize + ?Sized,
+    {
+        let url = self.url.join(endpoint)?;
+
+        let mut request = self
+            .client
+            .request(method.clone(), url)
+            .headers((*self.headers).clone());
+
+        if let Some(q) = query {
+            request = request.query(q);
+        }
+
+        if let Some(b) = body {
+            request = request.json(b);
+        }
+
+        if let Some(token) = access_token {
+            request = request.bearer_auth(token);
+        }
+
+        let response = request.send().await?.error_for_status().map_err(|err| {
+            if let Some(status) = err.status() {
+                warn!(%err,
+                    method = %method,
+                    endpoint = %endpoint,
+                    status = status.as_u16(),
+                    "Request failed");
+                ApiError::HttpError(err, status)
+            } else {
+                ApiError::Unknown(err)
+            }
+        })?;
+
+        let result = response.json::<T>().await?;
+        Ok(result)
+    }
 }
 
 impl Api {
@@ -27,6 +81,7 @@ impl Api {
 
         let mut headers = HeaderMap::new();
         headers.insert("apiKey", HeaderValue::from_str(api_key).unwrap());
+        let headers = Arc::new(headers);
 
         Self {
             url,
@@ -35,31 +90,26 @@ impl Api {
         }
     }
 
-    /// Register a new user.
-    /// Returns a Session if autoconfirm is enabled for the instance, else a Session.
+    /// Signs up a new user.
+    ///
+    /// # Arguments
+    ///
+    /// * `email_or_phone` - The user's email or phone number.
+    /// * `password` - The user's password.
+    ///
+    /// # Returns
+    ///
+    /// A `SignUpResponse` which may contain either a `User` or a `Session`, depending on the server configuration.
     #[instrument(skip(self, password), fields(user_id))]
     pub async fn sign_up(
         &self,
         email_or_phone: EmailOrPhone,
         password: impl AsRef<str> + Sized,
-    ) -> Result<SignUpResponse, SignUpError> {
-        let endpoint = self.url.join("signup").unwrap();
-
-        let response = self
-            .client
-            .post(endpoint)
-            .headers(self.headers.clone())
-            .json(&self.sign_in_up_body(email_or_phone, password))
+    ) -> Result<SignUpResponse, ApiError> {
+        self.send_request(Method::POST, "signup")
+            .body(&self.sign_in_up_body(email_or_phone, password))
             .send()
-            .await?;
-
-        if response.status() == StatusCode::UNPROCESSABLE_ENTITY {
-            return Err(SignUpError::UnableToSignUp);
-        };
-
-        let response: SignUpResponse = response.trace_error_for_status().await?.json().await?;
-
-        Ok(response)
+            .await
     }
 
     #[instrument(skip(self, password))]
@@ -67,23 +117,12 @@ impl Api {
         &self,
         email_or_phone: EmailOrPhone,
         password: impl AsRef<str>,
-    ) -> Result<Session, reqwest::Error> {
-        let endpoint = self.url.join("token").unwrap();
-
-        let response: Session = self
-            .client
-            .post(endpoint)
-            .headers(self.headers.clone())
+    ) -> Result<Session, ApiError> {
+        self.send_request(Method::POST, "token")
             .query(&[("grant_type", "password")])
-            .json(&self.sign_in_up_body(email_or_phone, password))
+            .body(&self.sign_in_up_body(email_or_phone, password))
             .send()
-            .await?
-            .trace_error_for_status()
-            .await?
-            .json()
-            .await?;
-
-        Ok(response)
+            .await
     }
 
     fn sign_in_up_body(
@@ -104,91 +143,50 @@ impl Api {
     }
 
     #[instrument(skip(self, access_token))]
-    pub async fn logout(&self, access_token: impl Display) -> Result<(), reqwest::Error> {
-        let endpoint = self.url.join("logout").unwrap();
-
-        self.client
-            .post(endpoint)
-            .headers(self.headers.clone())
-            .bearer_auth(access_token)
+    pub async fn logout(&self, access_token: impl AsRef<str>) -> Result<(), ApiError> {
+        self.send_request::<(), ()>(Method::POST, "logout")
+            .access_token(access_token.as_ref())
             .send()
-            .await?
-            .trace_error_for_status()
-            .await?;
-
-        Ok(())
+            .await
     }
 
     #[instrument(skip(self, access_token))]
-    pub async fn get_user(&self, access_token: impl Display) -> Result<User, reqwest::Error> {
-        let endpoint = self.url.join("user").unwrap();
-
-        let user = self
-            .client
-            .get(endpoint)
-            .headers(self.headers.clone())
-            .bearer_auth(access_token)
+    pub async fn get_user(&self, access_token: impl AsRef<str>) -> Result<User, ApiError> {
+        self.send_request::<_, ()>(Method::GET, "user")
+            .access_token(access_token.as_ref())
             .send()
-            .await?
-            .trace_error_for_status()
-            .await?
-            .json()
-            .await?;
-
-        Ok(user)
+            .await
     }
 
     #[instrument(skip(self, refresh_token))]
     pub async fn refresh_access_token(
         &self,
         refresh_token: impl AsRef<str>,
-    ) -> Result<Session, reqwest::Error> {
-        let endpoint = self.url.join("token").unwrap();
-
-        let response = self
-            .client
-            .post(endpoint)
-            .headers(self.headers.clone())
+    ) -> Result<Session, ApiError> {
+        self.send_request(Method::POST, "token")
             .query(&[("grant_type", "refresh_token")])
-            .json(&json!({
+            .body(&json!({
                 "refresh_token": refresh_token.as_ref(),
             }))
             .send()
-            .await?
-            .trace_error_for_status()
-            .await?
-            .json()
-            .await?;
-
-        Ok(response)
+            .await
     }
 
-    pub async fn list_users(&self, access_token: impl Display) -> Result<UserList, reqwest::Error> {
-        self.list_users_query(access_token, &{}).await
+    pub async fn list_users(&self, access_token: impl AsRef<str>) -> Result<UserList, ApiError> {
+        self.list_users_query(access_token, &[]).await
     }
 
     #[instrument(skip(self, access_token, query))]
     pub async fn list_users_query(
         &self,
-        access_token: impl Display,
-        query: &(impl Serialize + ?Sized),
-    ) -> Result<UserList, reqwest::Error> {
-        let endpoint = self.url.join("admin/users").unwrap();
-
-        let users = self
-            .client
-            .get(endpoint)
-            .headers(self.headers.clone())
+        access_token: impl AsRef<str>,
+        query: &[(&str, &str)],
+    ) -> Result<UserList, ApiError> {
+        self.send_request::<_, ()>(Method::GET, "admin/users")
             .query(query)
-            .bearer_auth(access_token)
+            .access_token(access_token.as_ref())
             .send()
-            .await?
-            .trace_error_for_status()
-            .await?
-            .json()
-            .await?;
-
-        Ok(users)
+            .await
     }
 
     pub fn create_pkce_oauth_url(&self, req: OAuthRequest, challenge: PkceCodeChallenge) -> Url {
@@ -210,26 +208,15 @@ impl Api {
         &self,
         code: &str,
         verifier: &PkceCodeVerifier,
-    ) -> Result<Session, reqwest::Error> {
-        let endpoint = self.url.join("token").unwrap();
-
-        let response: Session = self
-            .client
-            .post(endpoint)
-            .headers(self.headers.clone())
+    ) -> Result<Session, ApiError> {
+        self.send_request(Method::POST, "token")
             .query(&[("grant_type", "pkce")])
-            .json(&json!({
+            .body(&json!({
                 "auth_code": code,
                 "code_verifier": verifier.secret(),
             }))
             .send()
-            .await?
-            .trace_error_for_status()
-            .await?
-            .json()
-            .await?;
-
-        Ok(response)
+            .await
     }
 }
 
@@ -271,31 +258,13 @@ impl From<SignUpResponse> for Option<Session> {
     }
 }
 
+/// https://github.com/supabase/auth/blob/master/internal/api/errors.go
 #[derive(Debug, Error)]
-pub enum SignUpError {
-    #[error("Signups not allowed for this instance or user already existing")]
-    UnableToSignUp,
+pub enum ApiError {
+    #[error("Http error with status {1}: {0}")]
+    HttpError(#[source] reqwest::Error, StatusCode),
     #[error(transparent)]
     Unknown(#[from] reqwest::Error),
-}
-
-trait TraceErrorForStatus: Sized {
-    async fn trace_error_for_status(self) -> reqwest::Result<Self>;
-}
-
-impl TraceErrorForStatus for reqwest::Response {
-    async fn trace_error_for_status(self) -> reqwest::Result<Self> {
-        match self.error_for_status_ref() {
-            Ok(_) => Ok(self),
-            Err(error) => {
-                if let Some(status) = error.status() {
-                    let body: serde_json::Value = self.json().await.unwrap_or_default();
-                    error!(%error, status = status.as_str(), body = %body, "Request failed");
-                } else {
-                    error!(%error, "Request failed");
-                }
-                Err(error)
-            }
-        }
-    }
+    #[error("URL parsing error: {0}")]
+    UrlError(#[from] url::ParseError),
 }

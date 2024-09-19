@@ -1,9 +1,10 @@
 use crate::helpers::spawn_test;
 use anyhow::bail;
-use axum_supabase_auth::api::SignUpError::UnableToSignUp;
+use axum_supabase_auth::api::ApiError;
 use axum_supabase_auth::{EmailOrPhone, Session, User};
 use fake::faker::internet::en::{FreeEmail, Password};
 use fake::Fake;
+use reqwest::StatusCode;
 
 mod helpers;
 
@@ -40,7 +41,10 @@ async fn sign_up_disabled() -> anyhow::Result<()> {
     let result = client
         .sign_up(EmailOrPhone::Email(email.clone()), password)
         .await;
-    assert!(matches!(result, Err(UnableToSignUp)));
+    match result {
+        Err(ApiError::HttpError(_, StatusCode::UNPROCESSABLE_ENTITY)) => {}
+        _ => bail!("expected HTTP Error 422, but got: {:?}", result),
+    }
 
     Ok(())
 }
