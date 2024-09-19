@@ -1,7 +1,12 @@
 [package]
 name = "axum-supabase-auth"
+description = "Integrate Supabase Auth (GoTrue) with Axum"
 version = "0.1.0"
 edition = "2021"
+authors = ["Jannis Schaefer <jannis@schaefer.dev>"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/schjan/axum-supabase-auth"
+readme = "README.md"
 
 [[example]]
 name = "axum"

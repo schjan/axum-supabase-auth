@@ -1,0 +1,1 @@
+# Supabase Auth (GoTrue) for Axum
