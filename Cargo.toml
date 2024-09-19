@@ -10,11 +10,11 @@ required-features = ["axum"]
 [lib]
 
 [dependencies]
-axum = { version = "0.7.5", default-features = false, features = ["json", "macros", "query", "form"], optional = true }
-axum-extra = { version = "0.9", default-features = false, features = ["query", "cookie", "typed-header"], optional = true }
+axum = { version = "0.7.5", default-features = false, features = ["json", "macros", "query", "form"] }
+axum-extra = { version = "0.9", default-features = false, features = ["query", "cookie", "typed-header"] }
 base64 = "0.22"
 bon = "2.3.0"
-jsonwebtoken = { version = "9.3.0", default-features = false, optional = true }
+jsonwebtoken = { version = "9.3.0", default-features = false }
 oauth2 = { version = "4.4", default-features = false }
 reqwest = { version = "0.12", features = ["json"] }
 serde = { version = "1.0", features = ["derive"] }
@@ -31,6 +31,3 @@ tower = { version = "0.4", features = ["util"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 clap = { version = "4.5", features = ["derive"] }
 
-[features]
-default = ["axum"]
-axum = ["dep:axum", "dep:axum-extra", "dep:jsonwebtoken"]
