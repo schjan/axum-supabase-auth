@@ -107,7 +107,7 @@ impl Api {
         password: impl AsRef<str> + Sized,
     ) -> Result<SignUpResponse, ApiError> {
         self.send_request(Method::POST, "signup")
-            .body(&self.sign_in_up_body(email_or_phone, password))
+            .body(&self.sign_in_up_body(&email_or_phone, &password))
             .send()
             .await
     }
@@ -120,25 +120,27 @@ impl Api {
     ) -> Result<Session, ApiError> {
         self.send_request(Method::POST, "token")
             .query(&[("grant_type", "password")])
-            .body(&self.sign_in_up_body(email_or_phone, password))
+            .body(&self.sign_in_up_body(&email_or_phone, &password))
             .send()
             .await
     }
 
-    fn sign_in_up_body(
-        &self,
-        email_or_phone: EmailOrPhone,
-        password: impl AsRef<str>,
-    ) -> serde_json::Value {
+    fn sign_in_up_body<'a>(
+        &'a self,
+        email_or_phone: &'a EmailOrPhone,
+        password: &'a impl AsRef<str>,
+    ) -> SignInUpBody<'a> {
         match email_or_phone {
-            EmailOrPhone::Email(email) => json!({
-                "email": email,
-                "password": password.as_ref(),
-            }),
-            EmailOrPhone::Phone(phone) => json!({
-                "phone": phone,
-                "password": password.as_ref(),
-            }),
+            EmailOrPhone::Email(email) => SignInUpBody {
+                email: Some(email),
+                phone: None,
+                password: password.as_ref(),
+            },
+            EmailOrPhone::Phone(phone) => SignInUpBody {
+                email: None,
+                phone: Some(phone.as_str()),
+                password: password.as_ref(),
+            },
         }
     }
 
@@ -218,6 +220,15 @@ impl Api {
             .send()
             .await
     }
+}
+
+#[derive(Serialize)]
+struct SignInUpBody<'a> {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    email: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    phone: Option<&'a str>,
+    password: &'a str,
 }
 
 #[derive(Deserialize, Debug)]
