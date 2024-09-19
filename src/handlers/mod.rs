@@ -39,7 +39,7 @@ mod post {
         pub password: String,
         pub next: Option<String>,
     }
-    
+
     pub async fn login<T>(
         jar: CookieJar,
         State(auth): State<AuthState<T>>,
@@ -81,11 +81,10 @@ mod post {
             Some(claims) => claims,
             None => return Redirect::to("/login").into_response(),
         };
-        
 
         // TODO: logout API call.
         // let client = state.auth().with_token()
-        
+
         let jar = jar.remove(state.cookies().refresh_cookie_name().to_string());
         let jar = jar.remove(state.cookies().auth_cookie_name().to_string());
 
@@ -125,8 +124,8 @@ mod get {
             state.cookies().csrf_verifier_cookie_name().to_string(),
             response.csrf_token,
         ))
-            .expires(OffsetDateTime::now_utc().add(Duration::minutes(2)))
-            .secure(true);
+        .expires(OffsetDateTime::now_utc().add(Duration::minutes(2)))
+        .secure(true);
 
         let jar = jar.add(csrf_token.build());
 
@@ -177,23 +176,23 @@ fn set_cookies_from_session(
         cookie_config.auth_cookie_name().to_string(),
         session.access_token,
     ))
-        .path("/")
-        .secure(true)
-        .expires(expires)
-        .http_only(false)
-        .same_site(SameSite::Lax)
-        .build();
+    .path("/")
+    .secure(true)
+    .expires(expires)
+    .http_only(false)
+    .same_site(SameSite::Lax)
+    .build();
 
     let refresh_cookie = Cookie::build((
         cookie_config.refresh_cookie_name().to_string(),
         session.refresh_token,
     ))
-        .path("/")
-        .secure(true)
-        .expires(expires)
-        .http_only(false)
-        .same_site(SameSite::Lax)
-        .build();
+    .path("/")
+    .secure(true)
+    .expires(expires)
+    .http_only(false)
+    .same_site(SameSite::Lax)
+    .build();
 
     jar.add(auth_cookie).add(refresh_cookie)
 }
