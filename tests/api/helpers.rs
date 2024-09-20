@@ -1,4 +1,7 @@
 use axum_supabase_auth::api::Api;
+use axum_supabase_auth::{EmailOrPhone, User};
+use fake::faker::internet::en::{FreeEmail, Password};
+use fake::Fake;
 use std::sync::LazyLock;
 use std::time::Duration;
 use tracing::subscriber::set_global_default;
@@ -12,9 +15,9 @@ static TRACING: LazyLock<()> = LazyLock::new(|| {
     set_global_default(subscriber).expect("Failed to set subscriber");
 });
 
-const PROJECT_REFEENCE: &str = "project_ref";
+const PROJECT_REFERENCE: &str = "project_ref";
 const API_KEY: &str = "api_key";
-const JWT_SECRE: &str = "secret";
+const JWT_SECRET: &str = "secret";
 
 pub struct Clients {
     pub client: Api,
@@ -22,19 +25,58 @@ pub struct Clients {
     pub signup_disabled_client: Api,
 }
 
-pub fn spawn_test() -> anyhow::Result<Clients> {
+pub fn spawn_test() -> Clients {
     LazyLock::force(&TRACING);
 
     let timeout = Duration::from_secs(1);
-    let client = Api::new("http://localhost:9999".try_into()?, timeout, API_KEY);
-    let autoconfirm_client = Api::new("http://localhost:9998".try_into()?, timeout, API_KEY);
-    let signup_disabled_client = Api::new("http://localhost:9997".try_into()?, timeout, API_KEY);
+    let client = Api::new(
+        "http://localhost:9999".try_into().unwrap(),
+        timeout,
+        API_KEY,
+    );
+    let autoconfirm_client = Api::new(
+        "http://localhost:9998".try_into().unwrap(),
+        timeout,
+        API_KEY,
+    );
+    let signup_disabled_client = Api::new(
+        "http://localhost:9997".try_into().unwrap(),
+        timeout,
+        API_KEY,
+    );
 
-    let clients = Clients {
+    Clients {
         client,
         autoconfirm_client,
         signup_disabled_client,
-    };
+    }
+}
 
-    Ok(clients)
+pub struct Credentials {
+    pub email: String,
+    pub password: String,
+}
+
+pub async fn sign_up(client: &Api) -> (User, Credentials) {
+    let email = generate_email();
+    let password = generate_password();
+
+    let result = client
+        .sign_up(EmailOrPhone::Email(email.clone()), &password)
+        .await
+        .expect("Failed to sign up");
+
+    let credentials = Credentials { email, password };
+
+    let user = result.as_ref();
+
+    (user.clone(), credentials)
+}
+
+pub fn generate_email() -> String {
+    FreeEmail().fake()
+}
+
+pub fn generate_password() -> String {
+    Password(8..20).fake()
 }

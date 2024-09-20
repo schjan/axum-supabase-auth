@@ -1,4 +1,7 @@
+mod types;
+
 use super::types::*;
+use crate::api::types::HealthCheckResponse;
 use bon::bon;
 use either::Either;
 use oauth2::{PkceCodeChallenge, PkceCodeVerifier};
@@ -165,6 +168,13 @@ impl Api {
     pub async fn get_user(&self, access_token: impl AsRef<str>) -> Result<User, ApiError> {
         self.send_request::<_, ()>(Method::GET, "user")
             .access_token(access_token.as_ref())
+            .send()
+            .await
+    }
+
+    #[instrument(skip(self))]
+    pub async fn health_check(&self) -> Result<HealthCheckResponse, ApiError> {
+        self.send_request::<_, ()>(Method::GET, "health")
             .send()
             .await
     }
