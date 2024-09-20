@@ -1,5 +1,5 @@
 use axum_supabase_auth::api::Api;
-use axum_supabase_auth::{EmailOrPhone, User};
+use axum_supabase_auth::{EmailOrPhone, Session, User};
 use fake::faker::internet::en::{FreeEmail, Password};
 use fake::Fake;
 use std::sync::LazyLock;
@@ -57,7 +57,7 @@ pub struct Credentials {
     pub password: String,
 }
 
-pub async fn sign_up(client: &Api) -> (User, Credentials) {
+pub async fn sign_up(client: &Api) -> (Session, Credentials) {
     let email = generate_email();
     let password = generate_password();
 
@@ -68,9 +68,9 @@ pub async fn sign_up(client: &Api) -> (User, Credentials) {
 
     let credentials = Credentials { email, password };
 
-    let user = result.as_ref();
+    let session = result.session().expect("expected session");
 
-    (user.clone(), credentials)
+    (session, credentials)
 }
 
 pub fn generate_email() -> String {
