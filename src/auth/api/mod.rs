@@ -160,10 +160,17 @@ impl Api {
 
     #[instrument(skip(self, access_token))]
     pub async fn logout(&self, access_token: impl AsRef<str>) -> Result<(), ApiError> {
-        self.send_request::<(), ()>(Method::POST, "logout")
-            .access_token(access_token.as_ref())
+        let endpoint = self.url.join("logout")?;
+
+        self.client
+            .post(endpoint)
+            .headers((*self.headers).clone())
+            .bearer_auth(access_token.as_ref())
             .send()
-            .await
+            .await?
+            .error_for_status()?;
+
+        Ok(())
     }
 
     #[instrument(skip(self, access_token))]
