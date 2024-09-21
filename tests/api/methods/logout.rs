@@ -8,7 +8,7 @@ async fn logout() {
     // Arrange
     let helpers = spawn_test();
     let client = helpers.autoconfirm_client;
-    let (session, credentials) = sign_up(&client).await;
+    let (session, _) = sign_up(&client).await;
 
     // Act
     client

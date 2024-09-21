@@ -1,7 +1,7 @@
 use crate::helpers::{generate_email, generate_password, spawn_test};
 use axum::http::StatusCode;
 use axum_supabase_auth::api::ApiError;
-use axum_supabase_auth::EmailOrPhone;
+use axum_supabase_auth::{EmailOrPhone, User};
 use matches::assert_matches;
 
 #[tokio::test]
@@ -107,4 +107,30 @@ async fn sign_up_disabled() {
         result,
         Err(ApiError::HttpError(_, StatusCode::UNPROCESSABLE_ENTITY))
     );
+}
+
+#[tokio::test]
+async fn session_and_user_impl_as_ref() {
+    let helpers = spawn_test();
+    let client = helpers.client;
+    let autoconfirm_client = helpers.autoconfirm_client;
+    let email = generate_email();
+    let second_email = generate_email();
+    let password = generate_password();
+
+    // Act
+    let user_response = client
+        .sign_up(EmailOrPhone::Email(email.clone()), &password)
+        .await
+        .expect("Failed to sign up");
+    let session_response = autoconfirm_client
+        .sign_up(EmailOrPhone::Email(second_email.clone()), password)
+        .await
+        .expect("Failed to sign up");
+
+    // Assert
+    let user: &User = user_response.as_ref();
+    assert_eq!(user.email, email);
+    let session: &User = session_response.as_ref();
+    assert_eq!(session.email, second_email);
 }

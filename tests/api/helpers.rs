@@ -1,5 +1,5 @@
 use axum_supabase_auth::api::Api;
-use axum_supabase_auth::{EmailOrPhone, Session, User};
+use axum_supabase_auth::{EmailOrPhone, Session};
 use fake::faker::internet::en::{FreeEmail, Password};
 use fake::Fake;
 use jsonwebtoken::{encode, EncodingKey, Header};
