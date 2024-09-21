@@ -45,7 +45,9 @@ impl Api {
             .headers((*self.headers).clone());
 
         if let Some(q) = query {
-            request = request.query(q);
+            if !q.is_empty() {
+                request = request.query(q);
+            }
         }
 
         if let Some(b) = body {

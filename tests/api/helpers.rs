@@ -2,6 +2,8 @@ use axum_supabase_auth::api::Api;
 use axum_supabase_auth::{EmailOrPhone, Session, User};
 use fake::faker::internet::en::{FreeEmail, Password};
 use fake::Fake;
+use jsonwebtoken::{encode, EncodingKey, Header};
+use serde::{Deserialize, Serialize};
 use std::sync::LazyLock;
 use std::time::Duration;
 use tracing::subscriber::set_global_default;
@@ -79,4 +81,28 @@ pub fn generate_email() -> String {
 
 pub fn generate_password() -> String {
     Password(8..20).fake()
+}
+
+pub fn admin_token() -> String {
+    #[derive(Debug, Serialize, Deserialize)]
+    struct Claims {
+        aud: String,
+        sub: String,
+        role: String,
+        exp: i64,
+    }
+
+    let claims = Claims {
+        aud: "autoconfirm".into(),
+        sub: "admin".into(),
+        role: "supabase_admin".into(),
+        exp: 9999999999,
+    };
+
+    encode(
+        &Header::default(),
+        &claims,
+        &EncodingKey::from_secret(JWT_SECRET.as_ref()),
+    )
+    .unwrap()
 }

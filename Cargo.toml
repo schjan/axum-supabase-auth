@@ -14,8 +14,8 @@ name = "axum"
 [lib]
 
 [dependencies]
-axum = { version = "0.7.5", default-features = false, features = ["json", "macros", "query", "form"] }
-axum-extra = { version = "0.9", default-features = false, features = ["query", "cookie", "typed-header"] }
+axum = { version = "0.7.6", default-features = false, features = ["json", "macros", "query", "form"] }
+axum-extra = { version = "0.9.4", default-features = false, features = ["query", "cookie", "typed-header"] }
 base64 = "0.22"
 bon = "2.3.0"
 either = { version = "1.13.0", features = ["serde"] }
@@ -33,7 +33,7 @@ url = "2.5.2"
 anyhow = "1"
 tokio = { version = "1", features = ["rt-multi-thread", "net"] }
 axum = { version = "0.7.5", features = ["default"] }
-tower = { version = "0.4", features = ["util"] }
+tower = { version = "0.5", features = ["util"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 clap = { version = "4.5", features = ["derive"] }
 fake = "2.9.2"
