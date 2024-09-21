@@ -10,6 +10,7 @@ services:
       - "9999:9999"
     environment:
       GOTRUE_JWT_SECRET: "secret"
+      GOTRUE_JWT_AUD: "default"
       GOTRUE_DB_DRIVER: "postgres"
       NAMESPACE: "auth"
       DATABASE_URL: "postgres://supabase_auth_admin:root@postgres:5432/postgres"
@@ -35,6 +36,7 @@ services:
       - "9998:9998"
     environment:
       GOTRUE_JWT_SECRET: "secret"
+      GOTRUE_JWT_AUD: "autoconfirm"
       GOTRUE_DB_DRIVER: "postgres"
       NAMESPACE: "auth"
       DATABASE_URL: "postgres://supabase_auth_admin:root@postgres:5432/postgres"
@@ -67,6 +69,7 @@ services:
       - "9997:9997"
     environment:
       GOTRUE_JWT_SECRET: "secret"
+      GOTRUE_JWT_AUD: "signup_disabled"
       GOTRUE_DB_DRIVER: "postgres"
       NAMESPACE: "auth"
       DATABASE_URL: "postgres://supabase_auth_admin:root@postgres:5432/postgres"

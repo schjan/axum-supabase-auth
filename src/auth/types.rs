@@ -1,11 +1,14 @@
 use serde::Deserialize;
 use std::fmt::{Debug, Formatter};
+use time::OffsetDateTime;
 
 #[derive(Clone, Deserialize, PartialEq, Eq)]
 pub struct Session {
     pub access_token: String,
     pub token_type: String,
     pub expires_in: i32,
+    #[serde(with = "time::serde::timestamp")]
+    pub expires_at: OffsetDateTime,
     pub refresh_token: String,
     pub user: User,
 }
@@ -16,6 +19,7 @@ impl Debug for Session {
             .field("access_token", &"[redacted]")
             .field("token_type", &self.token_type)
             .field("expires_in", &self.expires_in)
+            .field("expires_at", &self.expires_at)
             .field("refresh_token", &"[redacted]")
             .field("user", &self.user)
             .finish()

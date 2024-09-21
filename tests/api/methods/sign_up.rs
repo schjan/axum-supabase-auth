@@ -1,125 +1,136 @@
-use crate::helpers::spawn_test;
-use anyhow::bail;
+use crate::helpers::{generate_email, generate_password, spawn_test};
 use axum::http::StatusCode;
 use axum_supabase_auth::api::ApiError;
 use axum_supabase_auth::{EmailOrPhone, User};
-use fake::faker::internet::en::{FreeEmail, Password};
-use fake::Fake;
+use matches::assert_matches;
 
 #[tokio::test]
-async fn sign_up() -> anyhow::Result<()> {
-    let clients = spawn_test()?;
-    let client = clients.client;
+async fn sign_up() {
+    // Arrange
+    let helpers = spawn_test();
+    let client = helpers.client;
+    let email = generate_email();
+    let password = generate_password();
 
-    let email: String = FreeEmail().fake();
-    let password: String = Password(8..20).fake();
-
+    // Act
     let result = client
         .sign_up(EmailOrPhone::Email(email.clone()), password)
-        .await?;
+        .await
+        .expect("Failed to sign up");
 
-    assert_eq!(AsRef::<User>::as_ref(&result).email, email);
-    if let Some(user) = result.user() {
-        assert_eq!(user.email, email);
-    } else {
-        bail!("expected session but got user");
-    }
-
-    Ok(())
+    // Assert
+    let user = result.user().expect("Expected user but got session");
+    assert_eq!(user.email, email);
 }
 
 #[tokio::test]
-async fn sign_up_twice() -> anyhow::Result<()> {
-    let clients = spawn_test()?;
-    let client = clients.client;
+async fn sign_up_twice() {
+    // Arrange
+    let helpers = spawn_test();
+    let client = helpers.client;
+    let email = generate_email();
+    let password = generate_password();
+    let second_password = generate_password();
 
-    let email: String = FreeEmail().fake();
-    let password: String = Password(8..20).fake();
-
-    let _result = client
+    // Act
+    client
         .sign_up(EmailOrPhone::Email(email.clone()), password)
-        .await?;
+        .await
+        .expect("First sign up failed");
 
-    let password: String = Password(8..20).fake();
     let result = client
-        .sign_up(EmailOrPhone::Email(email.clone()), password)
-        .await?;
+        .sign_up(EmailOrPhone::Email(email.clone()), second_password)
+        .await
+        .expect("Second sign up failed, but should produce fake data");
 
-    // Second sign up produces fake data.
-
-    assert_eq!(AsRef::<User>::as_ref(&result).email, email);
-    if let Some(user) = result.user() {
-        assert_eq!(user.email, email);
-    } else {
-        bail!("expected session but got user");
-    }
-
-    Ok(())
+    // Assert
+    let user = result.user().expect("expected user but got session");
+    assert_eq!(user.email, email);
 }
 
 #[tokio::test]
-async fn sign_up_autoconfirm() -> anyhow::Result<()> {
-    let clients = spawn_test()?;
-    let client = clients.autoconfirm_client;
+async fn sign_up_autoconfirm() {
+    // Arrange
+    let helpers = spawn_test();
+    let client = helpers.autoconfirm_client;
+    let email = generate_email();
+    let password = generate_password();
 
-    let email: String = FreeEmail().fake();
-    let password: String = Password(8..20).fake();
-
+    // Act
     let result = client
         .sign_up(EmailOrPhone::Email(email.clone()), password)
-        .await?;
+        .await
+        .unwrap();
 
-    assert_eq!(AsRef::<User>::as_ref(&result).email, email);
-    if let Some(session) = result.session() {
-        assert_eq!(session.user.email, email);
-    } else {
-        bail!("expected session but got user");
-    }
-
-    Ok(())
+    // Assert
+    let session = result.session().expect("expected session but got user");
+    assert_eq!(session.user.email, email);
 }
 
 #[tokio::test]
-async fn sign_up_autoconfirm_twice() -> anyhow::Result<()> {
-    let clients = spawn_test()?;
-    let client = clients.autoconfirm_client;
+async fn sign_up_autoconfirm_twice() {
+    let helpers = spawn_test();
+    let client = helpers.autoconfirm_client;
+    let email = generate_email();
+    let password = generate_password();
+    let new_password = generate_password();
 
-    let email: String = FreeEmail().fake();
-    let password: String = Password(8..20).fake();
-    let _result = client
+    client
         .sign_up(EmailOrPhone::Email(email.clone()), password)
-        .await?;
+        .await
+        .expect("first sign up failed");
 
-    let password: String = Password(8..20).fake();
     let result = client
-        .sign_up(EmailOrPhone::Email(email.clone()), password)
+        .sign_up(EmailOrPhone::Email(email.clone()), new_password)
         .await;
 
     // Second sign up produces unprocessable entity as user can not directly be logged in.
-
-    match result {
-        Err(ApiError::HttpError(_, StatusCode::UNPROCESSABLE_ENTITY)) => {}
-        _ => bail!("expected HTTP Error 422, but got: {:?}", result),
-    }
-
-    Ok(())
+    assert_matches!(
+        result,
+        Err(ApiError::HttpError(_, StatusCode::UNPROCESSABLE_ENTITY))
+    );
 }
 
 #[tokio::test]
-async fn sign_up_disabled() -> anyhow::Result<()> {
-    let clients = spawn_test()?;
-    let client = clients.signup_disabled_client;
-
-    let email: String = FreeEmail().fake();
-    let password: String = Password(8..20).fake();
+async fn sign_up_disabled() {
+    let helpers = spawn_test();
+    let client = helpers.signup_disabled_client;
+    let email = generate_email();
+    let password = generate_password();
 
     let result = client
         .sign_up(EmailOrPhone::Email(email.clone()), password)
         .await;
-    match result {
-        Err(ApiError::HttpError(_, StatusCode::UNPROCESSABLE_ENTITY)) => {}
-        _ => bail!("expected HTTP Error 422, but got: {:?}", result),
-    }
 
-    Ok(())
+    // Should result in an HTTP Error
+    assert_matches!(
+        result,
+        Err(ApiError::HttpError(_, StatusCode::UNPROCESSABLE_ENTITY))
+    );
+}
+
+#[tokio::test]
+async fn session_and_user_impl_as_ref() {
+    let helpers = spawn_test();
+    let client = helpers.client;
+    let autoconfirm_client = helpers.autoconfirm_client;
+    let email = generate_email();
+    let second_email = generate_email();
+    let password = generate_password();
+
+    // Act
+    let user_response = client
+        .sign_up(EmailOrPhone::Email(email.clone()), &password)
+        .await
+        .expect("Failed to sign up");
+    let session_response = autoconfirm_client
+        .sign_up(EmailOrPhone::Email(second_email.clone()), password)
+        .await
+        .expect("Failed to sign up");
+
+    // Assert
+    let user: &User = user_response.as_ref();
+    assert_eq!(user.email, email);
+    let session: &User = session_response.as_ref();
+    assert_eq!(session.email, second_email);
 }

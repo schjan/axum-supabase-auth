@@ -1,4 +1,7 @@
+mod types;
+
 use super::types::*;
+use crate::api::types::HealthCheckResponse;
 use bon::bon;
 use either::Either;
 use oauth2::{PkceCodeChallenge, PkceCodeVerifier};
@@ -42,7 +45,9 @@ impl Api {
             .headers((*self.headers).clone());
 
         if let Some(q) = query {
-            request = request.query(q);
+            if !q.is_empty() {
+                request = request.query(q);
+            }
         }
 
         if let Some(b) = body {
@@ -155,16 +160,30 @@ impl Api {
 
     #[instrument(skip(self, access_token))]
     pub async fn logout(&self, access_token: impl AsRef<str>) -> Result<(), ApiError> {
-        self.send_request::<(), ()>(Method::POST, "logout")
-            .access_token(access_token.as_ref())
+        let endpoint = self.url.join("logout")?;
+
+        self.client
+            .post(endpoint)
+            .headers((*self.headers).clone())
+            .bearer_auth(access_token.as_ref())
             .send()
-            .await
+            .await?
+            .error_for_status()?;
+
+        Ok(())
     }
 
     #[instrument(skip(self, access_token))]
     pub async fn get_user(&self, access_token: impl AsRef<str>) -> Result<User, ApiError> {
         self.send_request::<_, ()>(Method::GET, "user")
             .access_token(access_token.as_ref())
+            .send()
+            .await
+    }
+
+    #[instrument(skip(self))]
+    pub async fn health_check(&self) -> Result<HealthCheckResponse, ApiError> {
+        self.send_request::<_, ()>(Method::GET, "health")
             .send()
             .await
     }
