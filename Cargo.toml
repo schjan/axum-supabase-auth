@@ -14,8 +14,8 @@ name = "axum"
 [lib]
 
 [dependencies]
-axum = { version = "0.7.6", default-features = false, features = ["json", "macros", "query", "form"] }
-axum-extra = { version = "0.9.4", default-features = false, features = ["query", "cookie", "typed-header"] }
+axum = { version = "0.7.6", default-features = false, features = ["json", "macros", "query", "form", "tracing"] }
+axum-extra = { version = "0.9.4", default-features = false, features = ["query", "cookie", "typed-header", "tracing"] }
 base64 = "0.22"
 bon = "2.3.0"
 either = { version = "1.13.0", features = ["serde"] }
