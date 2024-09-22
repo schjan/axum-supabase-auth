@@ -48,7 +48,7 @@ async fn sign_in_wrong_password() {
         .await;
 
     // Assert
-    assert_matches!(result, Err(ApiError::HttpError(_, StatusCode::BAD_REQUEST)));
+    assert_matches!(result, Err(ApiError::Request(StatusCode::BAD_REQUEST,_, _, _)));
 }
 
 #[tokio::test]
@@ -63,5 +63,5 @@ async fn sign_in_non_existent() {
     let result = client.sign_in(EmailOrPhone::Email(email), password).await;
 
     // Assert
-    assert_matches!(result, Err(ApiError::HttpError(_, StatusCode::BAD_REQUEST)));
+    assert_matches!(result, Err(ApiError::Request(StatusCode::BAD_REQUEST,_, _, _)));
 }

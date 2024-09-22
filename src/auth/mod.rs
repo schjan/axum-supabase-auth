@@ -13,11 +13,13 @@ pub trait Auth: Clone + Send + Sync + 'static {
         email_or_phone: EmailOrPhone,
         password: impl AsRef<str> + Send,
     ) -> impl Future<Output = Result<SignUpResponse, ClientError>> + Send;
+    
     fn sign_in(
         &self,
         email_or_phone: EmailOrPhone,
         password: impl AsRef<str> + Send,
     ) -> impl Future<Output = Result<Session, ClientError>> + Send;
+    
     fn exchange_code_for_session(
         &self,
         code: &str,
@@ -28,6 +30,7 @@ pub trait Auth: Clone + Send + Sync + 'static {
     fn create_oauth_url(&self, req: OAuthRequest) -> Result<OAuthResponse, ClientError>;
 
     fn with_token(&self, access_token: String) -> impl SessionAuth;
+    
     fn with_refresh_token(&self, access_token: String, refresh_token: String) -> impl SessionAuth;
 }
 

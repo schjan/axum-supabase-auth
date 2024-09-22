@@ -1,19 +1,21 @@
 mod types;
 
+use std::fmt;
+use std::fmt::Formatter;
 use super::types::*;
 use crate::api::types::HealthCheckResponse;
 use bon::bon;
 use either::Either;
 use oauth2::{PkceCodeChallenge, PkceCodeVerifier};
 use reqwest::header::{HeaderMap, HeaderValue};
-use reqwest::{Client, Method, StatusCode, Url};
+use reqwest::{Client, Method, Response, StatusCode, Url};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Arc;
 use std::time::Duration;
 use thiserror::Error;
-use tracing::{error, instrument, warn};
+use tracing::{error, instrument, trace, warn};
 
 #[derive(Clone)]
 pub struct Api {
@@ -24,6 +26,7 @@ pub struct Api {
 
 #[bon]
 impl Api {
+    #[instrument(name = "api_request", skip(self, body, access_token, query), fields(status))]
     #[builder(finish_fn=send)]
     async fn send_request<T, B>(
         &self,
@@ -59,29 +62,30 @@ impl Api {
         }
 
         let response = request.send().await?;
+        tracing::Span::current().record("status", response.status().as_u16());
 
+        self.handle_response(response).await
+    }
+
+    async fn handle_response<T: DeserializeOwned>(&self, response: Response) -> Result<T, ApiError> {
         match response.error_for_status_ref() {
-            Ok(_) => {}
+            Ok(_) => Ok(response.json::<T>().await?),
             Err(err) => {
-                return if let Some(status) = err.status() {
-                    let body: ApiErrorResponse = response.json().await.unwrap_or_default();
+                let status = response.status();
+                
+                let body_txt = response.text().await?;
+                warn!(%err, "Something went wront: {body_txt}");
+                Err(ApiError::UnknownHTTP(err))
 
-                    warn!(%err,
-                        method = %method,
-                        endpoint = %endpoint,
-                        body = ?body,
-                        status = status.as_u16(),
-                        "Request failed");
-
-                    Err(ApiError::HttpError(err, status))
-                } else {
-                    Err(ApiError::Unknown(err))
-                }
+                // if let Ok(body) = response.json::<ApiErrorResponse>().await {
+                //     trace!(%err, body = ?body, "Request failed");
+                //     Err(ApiError::Request(status, body.error_code, body.msg, err))
+                // } else {
+                //     warn!(%err, "Request failed with unhandled HTTP error");
+                //     Err(ApiError::UnknownHTTP(err))
+                // }
             }
-        };
-
-        let result = response.json::<T>().await?;
-        Ok(result)
+        }
     }
 }
 
@@ -300,31 +304,56 @@ impl From<SignUpResponse> for Option<Session> {
 /// https://github.com/supabase/auth/blob/master/internal/api/errors.go
 #[derive(Debug, Error)]
 pub enum ApiError {
-    #[error("Http error with status {1}: {0}")]
-    HttpError(#[source] reqwest::Error, StatusCode),
+    #[error("API request failed with status code {0}, error {1}, message {2}")]
+    Request(StatusCode, ApiErrorCode, String, #[source] reqwest::Error),
+    #[error("OAuth request failed with status code {0}, error {1}")]
+    OAuth(StatusCode, OAuthError),
     #[error(transparent)]
-    Unknown(#[from] reqwest::Error),
+    UnknownHTTP(#[from] reqwest::Error),
     #[error("URL parsing error: {0}")]
     UrlError(#[from] url::ParseError),
 }
 
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Deserialize)]
 pub struct ApiErrorResponse {
-    pub code: u16,
+    pub code: Option<u16>,
     pub error_code: ApiErrorCode,
     pub msg: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum ApiErrorCode {
-    Unknown,
     SignupDisabled,
     UserAlreadyExists,
+    InvalidGrant,
+    #[serde(untagged)]
+    Unknown(String),
 }
 
-impl Default for ApiErrorCode {
-    fn default() -> Self {
-        Self::Unknown
+impl fmt::Display for ApiErrorCode {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct OAuthError {
+    pub error: String,
+    #[serde(rename = "error_description")]
+    pub description: Option<String>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    #[test]
+    fn api_error_code_unknown_error() {
+        let json = r#"{"error":"invalid_grant","error_description":"Invalid Refresh Token: Refresh Token Not Found"}"#;
+        
+        let result: ApiErrorResponse = serde_json::from_str(json).unwrap();
+        
+        assert_eq!(result.error_code, ApiErrorCode::InvalidGrant);
     }
 }

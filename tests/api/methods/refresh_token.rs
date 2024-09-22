@@ -37,5 +37,5 @@ async fn refresh_token_wrong_token() {
     let result = client.refresh_access_token(generate_password()).await;
 
     // Assert
-    assert_matches!(result, Err(ApiError::HttpError(_, StatusCode::BAD_REQUEST)));
+    assert_matches!(result, Err(ApiError::Request(StatusCode::BAD_REQUEST,_, _, _)));
 }

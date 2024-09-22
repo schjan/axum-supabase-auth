@@ -85,10 +85,7 @@ async fn sign_up_autoconfirm_twice() {
         .await;
 
     // Second sign up produces unprocessable entity as user can not directly be logged in.
-    assert_matches!(
-        result,
-        Err(ApiError::HttpError(_, StatusCode::UNPROCESSABLE_ENTITY))
-    );
+    assert_matches!(result, Err(ApiError::Request(StatusCode::UNPROCESSABLE_ENTITY,_, _, _)));
 }
 
 #[tokio::test]
@@ -103,10 +100,7 @@ async fn sign_up_disabled() {
         .await;
 
     // Should result in an HTTP Error
-    assert_matches!(
-        result,
-        Err(ApiError::HttpError(_, StatusCode::UNPROCESSABLE_ENTITY))
-    );
+    assert_matches!(result, Err(ApiError::Request(StatusCode::UNPROCESSABLE_ENTITY,_, _, _)));
 }
 
 #[tokio::test]

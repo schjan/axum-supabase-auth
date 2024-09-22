@@ -30,7 +30,7 @@ async fn get_user_wrong_token() {
     let result = client.get_user(generate_password()).await;
 
     // Assert
-    assert_matches!(result, Err(ApiError::HttpError(_, StatusCode::FORBIDDEN)));
+    assert_matches!(result, Err(ApiError::Request(StatusCode::FORBIDDEN,_, _, _)));
 }
 
 #[tokio::test]
@@ -43,5 +43,5 @@ async fn get_user_admin_token() {
     let result = client.get_user(admin_token()).await;
 
     // Assert
-    assert_matches!(result, Err(ApiError::HttpError(_, StatusCode::BAD_REQUEST)));
+    assert_matches!(result, Err(ApiError::Request(StatusCode::BAD_REQUEST,_, _, _)));
 }
