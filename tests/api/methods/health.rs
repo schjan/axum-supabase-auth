@@ -1,4 +1,5 @@
 use crate::helpers::spawn_test;
+use axum_supabase_auth::api::Api;
 
 #[tokio::test]
 async fn health() {

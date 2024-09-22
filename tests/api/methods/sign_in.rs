@@ -1,5 +1,5 @@
 use crate::helpers::{generate_email, generate_password, sign_up, spawn_test};
-use axum_supabase_auth::api::ApiError;
+use axum_supabase_auth::api::{Api, ApiError};
 use axum_supabase_auth::EmailOrPhone;
 use matches::assert_matches;
 use reqwest::StatusCode;
@@ -48,7 +48,10 @@ async fn sign_in_wrong_password() {
         .await;
 
     // Assert
-    assert_matches!(result, Err(ApiError::Request(StatusCode::BAD_REQUEST,_, _, _)));
+    assert_matches!(
+        result,
+        Err(ApiError::Request(StatusCode::BAD_REQUEST, _, _))
+    );
 }
 
 #[tokio::test]
@@ -63,5 +66,8 @@ async fn sign_in_non_existent() {
     let result = client.sign_in(EmailOrPhone::Email(email), password).await;
 
     // Assert
-    assert_matches!(result, Err(ApiError::Request(StatusCode::BAD_REQUEST,_, _, _)));
+    assert_matches!(
+        result,
+        Err(ApiError::Request(StatusCode::BAD_REQUEST, _, _))
+    );
 }

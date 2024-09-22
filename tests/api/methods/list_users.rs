@@ -1,4 +1,5 @@
 use crate::helpers::{admin_token, sign_up, spawn_test};
+use axum_supabase_auth::api::Api;
 
 #[tokio::test]
 async fn list_users_admin() {

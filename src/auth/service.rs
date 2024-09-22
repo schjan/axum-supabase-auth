@@ -1,5 +1,5 @@
-use crate::api::{ApiError, SignUpResponse};
-use crate::auth::api::Api;
+use crate::api::{Api, ApiError, ApiErrorCode, SignUpResponse};
+use crate::auth::api::ApiClient;
 use crate::auth::ClientError;
 use crate::{Auth, EmailOrPhone, OAuthRequest, OAuthResponse, Session, SessionAuth, User};
 use axum::http::StatusCode;
@@ -12,7 +12,7 @@ use tracing::error;
 
 #[derive(Clone)]
 pub struct AuthService {
-    api: Arc<Api>,
+    api: Arc<ApiClient>,
 }
 
 impl AuthService {
@@ -22,7 +22,7 @@ impl AuthService {
 
     pub fn new_with_timeout(url: Url, api_key: &str, timeout: Duration) -> Self {
         Self {
-            api: Arc::new(Api::new(url, timeout, api_key)),
+            api: Arc::new(ApiClient::new(url, timeout, api_key)),
         }
     }
 }
@@ -31,11 +31,11 @@ impl Auth for AuthService {
     async fn sign_up(
         &self,
         email_or_phone: EmailOrPhone,
-        password: impl AsRef<str>,
+        password: impl AsRef<str> + Send,
     ) -> Result<SignUpResponse, ClientError> {
         match self.api.sign_up(email_or_phone, password).await {
             Ok(session) => Ok(session),
-            Err(ApiError::Request(StatusCode::UNPROCESSABLE_ENTITY, _, _, _)) => {
+            Err(ApiError::Request(StatusCode::UNPROCESSABLE_ENTITY, _, _)) => {
                 Err(ClientError::AlreadySignedUp)
             }
             Err(e) => {
@@ -48,11 +48,11 @@ impl Auth for AuthService {
     async fn sign_in(
         &self,
         email_or_phone: EmailOrPhone,
-        password: impl AsRef<str>,
+        password: impl AsRef<str> + Send,
     ) -> Result<Session, ClientError> {
         match self.api.sign_in(email_or_phone, password).await {
             Ok(session) => Ok(session),
-            Err(ApiError::Request(StatusCode::BAD_REQUEST, _, _, _))  => {
+            Err(ApiError::Request(StatusCode::BAD_REQUEST, _, _)) => {
                 Err(ClientError::WrongCredentials)
             }
             Err(e) => {
@@ -70,7 +70,7 @@ impl Auth for AuthService {
         let csrf_token = BASE64_STANDARD
             .decode(csrf_token_b64)
             .map_err(|_| ClientError::WrongToken)?;
-        
+
         let verifier = PkceCodeVerifier::new(
             String::from_utf8(csrf_token).map_err(|_| ClientError::WrongToken)?,
         );
@@ -150,7 +150,7 @@ impl SessionAuth for SessionAuthService {
     async fn list_users(&self) -> Result<Vec<User>, ClientError> {
         match self.auth.api.list_users(&self.access_token).await {
             Ok(users) => Ok(users.users),
-            Err(ApiError::Request(StatusCode::FORBIDDEN, _, _, _))  => {
+            Err(ApiError::Request(_, ApiErrorCode::InvalidCredentials, _)) => {
                 Err(ClientError::WrongCredentials)
             }
             Err(e) => {

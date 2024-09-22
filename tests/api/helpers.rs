@@ -1,4 +1,4 @@
-use axum_supabase_auth::api::Api;
+use axum_supabase_auth::api::{Api, ApiClient};
 use axum_supabase_auth::{EmailOrPhone, Session};
 use fake::faker::internet::en::{FreeEmail, Password};
 use fake::Fake;
@@ -22,26 +22,26 @@ const API_KEY: &str = "api_key";
 const JWT_SECRET: &str = "secret";
 
 pub struct Clients {
-    pub client: Api,
-    pub autoconfirm_client: Api,
-    pub signup_disabled_client: Api,
+    pub client: ApiClient,
+    pub autoconfirm_client: ApiClient,
+    pub signup_disabled_client: ApiClient,
 }
 
 pub fn spawn_test() -> Clients {
     LazyLock::force(&TRACING);
 
     let timeout = Duration::from_secs(1);
-    let client = Api::new(
+    let client = ApiClient::new(
         "http://localhost:9999".try_into().unwrap(),
         timeout,
         API_KEY,
     );
-    let autoconfirm_client = Api::new(
+    let autoconfirm_client = ApiClient::new(
         "http://localhost:9998".try_into().unwrap(),
         timeout,
         API_KEY,
     );
-    let signup_disabled_client = Api::new(
+    let signup_disabled_client = ApiClient::new(
         "http://localhost:9997".try_into().unwrap(),
         timeout,
         API_KEY,
@@ -59,7 +59,7 @@ pub struct Credentials {
     pub password: String,
 }
 
-pub async fn sign_up(client: &Api) -> (Session, Credentials) {
+pub async fn sign_up(client: &impl Api) -> (Session, Credentials) {
     let email = generate_email();
     let password = generate_password();
 
