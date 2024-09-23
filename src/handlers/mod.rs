@@ -22,16 +22,18 @@ where
 }
 
 mod post {
+    use crate::auth::SessionAuth;
     use crate::handlers::set_cookies_from_session;
-    use crate::middleware::MaybeUser;
+    use crate::middleware::{AccessToken, MaybeUser};
     use crate::AuthState;
     use crate::{Auth, AuthTypes, EmailOrPhone};
     use axum::extract::State;
     use axum::http::StatusCode;
     use axum::response::{IntoResponse, Redirect};
-    use axum::Form;
+    use axum::{debug_handler, Form};
     use axum_extra::extract::CookieJar;
     use serde::Deserialize;
+    use tracing::warn;
 
     #[derive(Debug, Clone, Deserialize)]
     pub struct Credentials {
@@ -71,22 +73,20 @@ mod post {
 
     pub async fn logout<T>(
         State(state): State<AuthState<T>>,
+        token: AccessToken<T>,
         jar: CookieJar,
-        MaybeUser(claims): MaybeUser<T>,
     ) -> impl IntoResponse
     where
         T: AuthTypes,
     {
-        let _claims = match claims {
-            Some(claims) => claims,
-            None => return Redirect::to("/login").into_response(),
-        };
-
-        // TODO: logout API call.
-        // let client = state.auth().with_token()
-
         let jar = jar.remove(state.cookies().refresh_cookie_name().to_string());
         let jar = jar.remove(state.cookies().auth_cookie_name().to_string());
+
+        let client = state.auth().with_token(token.into());
+        if let Err(err) = client.logout().await {
+            warn!(%err, "logout failed");
+            return (jar, StatusCode::INTERNAL_SERVER_ERROR).into_response();
+        };
 
         (jar, Redirect::to("/login")).into_response()
     }
@@ -124,8 +124,8 @@ mod get {
             state.cookies().csrf_verifier_cookie_name().to_string(),
             response.csrf_token,
         ))
-        .expires(OffsetDateTime::now_utc().add(Duration::minutes(2)))
-        .secure(true);
+            .expires(OffsetDateTime::now_utc().add(Duration::minutes(2)))
+            .secure(true);
 
         let jar = jar.add(csrf_token.build());
 
@@ -176,23 +176,23 @@ fn set_cookies_from_session(
         cookie_config.auth_cookie_name().to_string(),
         session.access_token,
     ))
-    .path("/")
-    .secure(true)
-    .expires(expires)
-    .http_only(false)
-    .same_site(SameSite::Lax)
-    .build();
+        .path("/")
+        .secure(true)
+        .expires(expires)
+        .http_only(false)
+        .same_site(SameSite::Lax)
+        .build();
 
     let refresh_cookie = Cookie::build((
         cookie_config.refresh_cookie_name().to_string(),
         session.refresh_token,
     ))
-    .path("/")
-    .secure(true)
-    .expires(expires)
-    .http_only(false)
-    .same_site(SameSite::Lax)
-    .build();
+        .path("/")
+        .secure(true)
+        .expires(expires)
+        .http_only(false)
+        .same_site(SameSite::Lax)
+        .build();
 
     jar.add(auth_cookie).add(refresh_cookie)
 }
