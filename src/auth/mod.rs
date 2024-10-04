@@ -35,11 +35,11 @@ pub trait Auth: Clone + Send + Sync + 'static {
 }
 
 pub trait SessionAuth {
-    fn logout(&self) -> impl Future<Output = Result<(), ClientError>>;
+    fn logout(&self) -> impl Future<Output = Result<(), ClientError>> + Send;
 
-    fn list_users(&self) -> impl Future<Output = Result<Vec<User>, ClientError>>;
+    fn list_users(&self) -> impl Future<Output = Result<Vec<User>, ClientError>> + Send;
 
-    fn refresh(&mut self) -> impl Future<Output = Result<Session, ClientError>>;
+    fn refresh(&mut self) -> impl Future<Output = Result<Session, ClientError>> + Send;
 }
 
 #[derive(Debug, Error)]

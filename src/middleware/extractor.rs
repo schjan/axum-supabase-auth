@@ -16,6 +16,7 @@ pub type AuthClaims<T> =
 
 pub struct User<T: AuthTypes>(pub AuthClaims<T>);
 pub struct MaybeUser<T: AuthTypes>(pub Option<AuthClaims<T>>);
+pub struct SomeAccessToken<T: AuthTypes>(pub AccessToken<T>);
 
 // TODO: somehow remove T from AccessToken, else its pain to use in AuthService
 pub struct AccessToken<T: AuthTypes> {
@@ -102,6 +103,37 @@ where
         Span::current().record("user_id", &claims.sub);
 
         Ok(MaybeUser(Some(claims)))
+    }
+}
+
+#[async_trait]
+impl<S, T> FromRequestParts<S> for SomeAccessToken<T>
+where
+    S: Send + Sync,
+    T: AuthTypes,
+    AuthState<T>: FromRef<S>,
+{
+    type Rejection = AuthError;
+
+    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+        let jar = match CookieJar::from_request_parts(parts, state).await {
+            Ok(jar) => jar,
+            Err(err) => match err {},
+        };
+
+        let state = AuthState::from_ref(state);
+
+        let token = jar.get(state.cookies().auth_cookie_name());
+        let token = match token {
+            Some(token) => token,
+            None => {
+                trace!("no auth cookie found");
+                return Err(AuthError::MissingCredentials);
+            }
+        };
+        let token = AccessToken::new(token.value_trimmed());
+
+        Ok(SomeAccessToken(token))
     }
 }
 

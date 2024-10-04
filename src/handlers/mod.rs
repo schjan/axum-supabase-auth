@@ -1,5 +1,5 @@
 use crate::middleware::{AuthState, CookieConfig};
-use crate::{AuthTypes, Session};
+use crate::{AuthTypes, DefaultAuthTypes, Session};
 use axum::extract::FromRef;
 use axum::routing::{get, post};
 use axum::Router;
@@ -24,9 +24,9 @@ where
 mod post {
     use crate::auth::SessionAuth;
     use crate::handlers::set_cookies_from_session;
-    use crate::middleware::{AccessToken, MaybeUser};
-    use crate::AuthState;
+    use crate::middleware::{AccessToken, MaybeUser, SomeAccessToken};
     use crate::{Auth, AuthTypes, EmailOrPhone};
+    use crate::{AuthState, DefaultAuthTypes};
     use axum::extract::State;
     use axum::http::StatusCode;
     use axum::response::{IntoResponse, Redirect};
@@ -72,9 +72,9 @@ mod post {
     }
 
     pub async fn logout<T>(
+        jar: CookieJar,
         State(state): State<AuthState<T>>,
         token: AccessToken<T>,
-        jar: CookieJar,
     ) -> impl IntoResponse
     where
         T: AuthTypes,
@@ -124,8 +124,8 @@ mod get {
             state.cookies().csrf_verifier_cookie_name().to_string(),
             response.csrf_token,
         ))
-            .expires(OffsetDateTime::now_utc().add(Duration::minutes(2)))
-            .secure(true);
+        .expires(OffsetDateTime::now_utc().add(Duration::minutes(2)))
+        .secure(true);
 
         let jar = jar.add(csrf_token.build());
 
@@ -176,23 +176,23 @@ fn set_cookies_from_session(
         cookie_config.auth_cookie_name().to_string(),
         session.access_token,
     ))
-        .path("/")
-        .secure(true)
-        .expires(expires)
-        .http_only(false)
-        .same_site(SameSite::Lax)
-        .build();
+    .path("/")
+    .secure(true)
+    .expires(expires)
+    .http_only(false)
+    .same_site(SameSite::Lax)
+    .build();
 
     let refresh_cookie = Cookie::build((
         cookie_config.refresh_cookie_name().to_string(),
         session.refresh_token,
     ))
-        .path("/")
-        .secure(true)
-        .expires(expires)
-        .http_only(false)
-        .same_site(SameSite::Lax)
-        .build();
+    .path("/")
+    .secure(true)
+    .expires(expires)
+    .http_only(false)
+    .same_site(SameSite::Lax)
+    .build();
 
     jar.add(auth_cookie).add(refresh_cookie)
 }
