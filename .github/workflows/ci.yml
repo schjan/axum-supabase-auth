@@ -21,6 +21,14 @@ jobs:
       - name: Run gotrue Server
         run: docker compose -f ./tests/setup/docker-compose.yml up -d --build
 
+      - uses: supabase/setup-cli@v1
+        name: Install supabase CLI
+        with:
+          version: latest
+
+      - name: Start Supabase
+        run: supabase start -x realtime,storage-api,imgproxy,inbucket,studio,edge-runtime,logflare,vector,supavisor,postgrest,postgrest-meta
+
       - name: Rust setup
         uses: dtolnay/rust-toolchain@stable
 
@@ -38,6 +46,14 @@ jobs:
 
       - name: Run gotrue Server
         run: docker compose -f ./tests/setup/docker-compose.yml up -d --build
+
+      - uses: supabase/setup-cli@v1
+        name: Install supabase CLI
+        with:
+          version: latest
+
+      - name: Start Supabase
+        run: supabase start -x realtime,storage-api,imgproxy,inbucket,studio,edge-runtime,logflare,vector,supavisor,postgrest,postgrest-meta
 
       - name: Rust setup
         uses: dtolnay/rust-toolchain@stable
