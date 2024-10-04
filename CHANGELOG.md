@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1](https://github.com/schjan/axum-supabase-auth/compare/v0.1.0...v0.1.1) - 2024-10-04
+
+### Fixed
+
+- *(deps)* update rust crate reqwest to v0.12.8 ([#13](https://github.com/schjan/axum-supabase-auth/pull/13))
+
+### Other
+
+- update dependencies
+- *(deps)* update rust crate axum to v0.7.7 ([#12](https://github.com/schjan/axum-supabase-auth/pull/12))
+- add lockfile
+- *(deps)* update rustsec/audit-check action to v2 ([#10](https://github.com/schjan/axum-supabase-auth/pull/10))
+- clippy results in security tab ([#9](https://github.com/schjan/axum-supabase-auth/pull/9))
+
 ## [0.1.0](https://github.com/schjan/axum-supabase-auth/releases/tag/v0.1.0) - 2024-09-21
 
 ### Added
