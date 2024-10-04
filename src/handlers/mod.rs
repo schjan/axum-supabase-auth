@@ -1,5 +1,5 @@
 use crate::middleware::{AuthState, CookieConfig};
-use crate::{AuthTypes, DefaultAuthTypes, Session};
+use crate::{AuthTypes, Session};
 use axum::extract::FromRef;
 use axum::routing::{get, post};
 use axum::Router;
@@ -24,13 +24,13 @@ where
 mod post {
     use crate::auth::SessionAuth;
     use crate::handlers::set_cookies_from_session;
-    use crate::middleware::{AccessToken, MaybeUser, SomeAccessToken};
+    use crate::middleware::{AccessToken, MaybeUser};
+    use crate::AuthState;
     use crate::{Auth, AuthTypes, EmailOrPhone};
-    use crate::{AuthState, DefaultAuthTypes};
     use axum::extract::State;
     use axum::http::StatusCode;
     use axum::response::{IntoResponse, Redirect};
-    use axum::{debug_handler, Form};
+    use axum::Form;
     use axum_extra::extract::CookieJar;
     use serde::Deserialize;
     use tracing::warn;

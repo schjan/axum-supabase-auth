@@ -233,7 +233,7 @@ impl Api for ApiClient {
 }
 
 trait HandleApiResponse {
-    async fn handle_response<T: DeserializeOwned, E>(self) -> Result<T, ApiError>
+    async fn handle_response<T, E>(self) -> Result<T, ApiError>
     where
         T: DeserializeOwned,
         E: DeserializeOwned + IntoApi + Debug;

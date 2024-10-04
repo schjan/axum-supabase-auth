@@ -1,5 +1,4 @@
 use crate::helpers::{generate_password, sign_up, spawn_test};
-use axum::http::StatusCode;
 use axum_supabase_auth::api::{Api, ApiError, OAuthErrorCode};
 use matches::assert_matches;
 use std::ops::Add;
