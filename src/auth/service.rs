@@ -1,7 +1,9 @@
 use crate::api::{Api, ApiError, ApiErrorCode, SignUpResponse};
 use crate::auth::api::ApiClient;
 use crate::auth::ClientError;
-use crate::{Auth, EmailOrPhone, OAuthRequest, OAuthResponse, Session, SessionAuth, User};
+use crate::{
+    AccessToken, Auth, EmailOrPhone, OAuthRequest, OAuthResponse, Session, SessionAuth, User,
+};
 use axum::http::StatusCode;
 use base64::prelude::{Engine as _, BASE64_STANDARD};
 use oauth2::{PkceCodeChallenge, PkceCodeVerifier};
@@ -96,11 +98,15 @@ impl Auth for AuthService {
         })
     }
 
-    fn with_token(&self, access_token: String) -> impl SessionAuth {
+    fn with_token(&self, access_token: AccessToken) -> impl SessionAuth {
         SessionAuthService::with_token(self.clone(), access_token)
     }
 
-    fn with_refresh_token(&self, access_token: String, refresh_token: String) -> impl SessionAuth {
+    fn with_refresh_token(
+        &self,
+        access_token: AccessToken,
+        refresh_token: String,
+    ) -> impl SessionAuth {
         SessionAuthService::with_refresh_token(self.clone(), access_token, refresh_token)
     }
 }
@@ -108,7 +114,7 @@ impl Auth for AuthService {
 #[derive(Clone)]
 pub struct SessionAuthService {
     auth: AuthService,
-    access_token: String,
+    access_token: AccessToken,
     refresh_token: Option<String>,
 }
 
@@ -119,7 +125,7 @@ impl AsRef<AuthService> for SessionAuthService {
 }
 
 impl SessionAuthService {
-    fn with_token(auth: AuthService, access_token: String) -> Self {
+    fn with_token(auth: AuthService, access_token: AccessToken) -> Self {
         Self {
             auth,
             access_token,
@@ -127,7 +133,11 @@ impl SessionAuthService {
         }
     }
 
-    fn with_refresh_token(auth: AuthService, access_token: String, refresh_token: String) -> Self {
+    fn with_refresh_token(
+        auth: AuthService,
+        access_token: AccessToken,
+        refresh_token: String,
+    ) -> Self {
         Self {
             auth,
             access_token,
@@ -174,7 +184,7 @@ impl SessionAuth for SessionAuthService {
             }
         };
 
-        self.access_token = session.access_token.clone();
+        self.access_token = session.access_token.clone().into();
         self.refresh_token = Some(session.refresh_token.clone());
         Ok(session)
     }

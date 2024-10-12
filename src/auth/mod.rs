@@ -1,5 +1,5 @@
 use crate::api::SignUpResponse;
-use crate::{EmailOrPhone, OAuthRequest, OAuthResponse, Session, User};
+use crate::{AccessToken, EmailOrPhone, OAuthRequest, OAuthResponse, Session, User};
 use std::future::Future;
 use thiserror::Error;
 
@@ -29,9 +29,13 @@ pub trait Auth: Clone + Send + Sync + 'static {
     // TODO: move to axum?
     fn create_oauth_url(&self, req: OAuthRequest) -> Result<OAuthResponse, ClientError>;
 
-    fn with_token(&self, access_token: String) -> impl SessionAuth;
+    fn with_token(&self, access_token: AccessToken) -> impl SessionAuth;
 
-    fn with_refresh_token(&self, access_token: String, refresh_token: String) -> impl SessionAuth;
+    fn with_refresh_token(
+        &self,
+        access_token: AccessToken,
+        refresh_token: String,
+    ) -> impl SessionAuth;
 }
 
 pub trait SessionAuth {

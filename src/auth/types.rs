@@ -2,6 +2,27 @@ use serde::Deserialize;
 use std::fmt::{Debug, Formatter};
 use time::OffsetDateTime;
 
+#[derive(Clone)]
+pub struct AccessToken(String);
+
+impl Debug for AccessToken {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[redacted]")
+    }
+}
+
+impl AsRef<str> for AccessToken {
+    fn as_ref(&self) -> &str {
+        self.0.as_str()
+    }
+}
+
+impl From<String> for AccessToken {
+    fn from(access_token: String) -> Self {
+        AccessToken(access_token)
+    }
+}
+
 #[derive(Clone, Deserialize, PartialEq, Eq)]
 pub struct Session {
     pub access_token: String,

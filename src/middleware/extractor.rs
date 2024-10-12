@@ -1,4 +1,5 @@
 use super::{AuthState, Claims};
+use crate::auth::types;
 use crate::AuthTypes;
 use axum::extract::{FromRef, FromRequestParts};
 use axum::http::request::Parts;
@@ -22,6 +23,12 @@ pub struct SomeAccessToken<T: AuthTypes>(pub AccessToken<T>);
 pub struct AccessToken<T: AuthTypes> {
     token: String,
     phantom_data: PhantomData<T>,
+}
+
+impl<T: AuthTypes> From<AccessToken<T>> for types::AccessToken {
+    fn from(value: AccessToken<T>) -> Self {
+        value.token.into()
+    }
 }
 
 impl<T: AuthTypes> AccessToken<T> {
