@@ -14,7 +14,7 @@ name = "axum"
 [lib]
 
 [dependencies]
-axum = { version = "0.7.6", default-features = false, features = ["json", "macros", "query", "form", "tracing"] }
+axum = { version = "0.7.7", default-features = false, features = ["json", "macros", "query", "form", "tracing"] }
 axum-extra = { version = "0.9.4", default-features = false, features = ["query", "cookie", "typed-header", "tracing"] }
 base64 = "0.22"
 bon = "2.3.0"
@@ -33,9 +33,9 @@ uuid = { version = "1.10.0", features = ["serde", "v4"] }
 [dev-dependencies]
 anyhow = "1"
 tokio = { version = "1", features = ["rt-multi-thread", "net"] }
-axum = { version = "0.7.5", features = ["default"] }
+axum = { version = "0.7.7", features = ["default"] }
 tower = { version = "0.5", features = ["util"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 clap = { version = "4.5", features = ["derive"] }
-fake = "2.9.2"
+fake = "2.10.0"
 matches = "0.1.10"
