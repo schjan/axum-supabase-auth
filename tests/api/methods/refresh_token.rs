@@ -20,8 +20,8 @@ async fn refresh_token() {
 
     // Assert
     assert_eq!(result.user.email, credentials.email);
-    assert!(!result.access_token.is_empty());
-    assert!(!result.refresh_token.is_empty());
+    assert!(!result.access_token.as_ref().is_empty());
+    assert!(!result.refresh_token.as_ref().is_empty());
     assert!(result.expires_at > OffsetDateTime::now_utc().add(Duration::from_secs(60 * 30)));
     assert!(result.expires_at < OffsetDateTime::now_utc().add(Duration::from_secs(60 * 61)));
 }

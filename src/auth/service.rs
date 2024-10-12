@@ -2,7 +2,8 @@ use crate::api::{Api, ApiError, ApiErrorCode, SignUpResponse};
 use crate::auth::api::ApiClient;
 use crate::auth::ClientError;
 use crate::{
-    AccessToken, Auth, EmailOrPhone, OAuthRequest, OAuthResponse, Session, SessionAuth, User,
+    AccessToken, Auth, EmailOrPhone, OAuthRequest, OAuthResponse, RefreshToken, Session,
+    SessionAuth, User,
 };
 use axum::http::StatusCode;
 use base64::prelude::{Engine as _, BASE64_STANDARD};
@@ -105,7 +106,7 @@ impl Auth for AuthService {
     fn with_refresh_token(
         &self,
         access_token: AccessToken,
-        refresh_token: String,
+        refresh_token: RefreshToken,
     ) -> impl SessionAuth {
         SessionAuthService::with_refresh_token(self.clone(), access_token, refresh_token)
     }
@@ -115,7 +116,7 @@ impl Auth for AuthService {
 pub struct SessionAuthService {
     auth: AuthService,
     access_token: AccessToken,
-    refresh_token: Option<String>,
+    refresh_token: Option<RefreshToken>,
 }
 
 impl AsRef<AuthService> for SessionAuthService {
@@ -136,7 +137,7 @@ impl SessionAuthService {
     fn with_refresh_token(
         auth: AuthService,
         access_token: AccessToken,
-        refresh_token: String,
+        refresh_token: RefreshToken,
     ) -> Self {
         Self {
             auth,
@@ -184,7 +185,7 @@ impl SessionAuth for SessionAuthService {
             }
         };
 
-        self.access_token = session.access_token.clone().into();
+        self.access_token = session.access_token.clone();
         self.refresh_token = Some(session.refresh_token.clone());
         Ok(session)
     }

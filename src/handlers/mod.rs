@@ -174,7 +174,7 @@ fn set_cookies_from_session(
     let expires = OffsetDateTime::now_utc().add(Duration::seconds(session.expires_in as i64));
     let auth_cookie = Cookie::build((
         cookie_config.auth_cookie_name().to_string(),
-        session.access_token,
+        String::from(session.access_token),
     ))
     .path("/")
     .secure(true)
@@ -185,7 +185,7 @@ fn set_cookies_from_session(
 
     let refresh_cookie = Cookie::build((
         cookie_config.refresh_cookie_name().to_string(),
-        session.refresh_token,
+        String::from(session.refresh_token),
     ))
     .path("/")
     .secure(true)

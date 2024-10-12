@@ -1,5 +1,5 @@
 use crate::api::SignUpResponse;
-use crate::{AccessToken, EmailOrPhone, OAuthRequest, OAuthResponse, Session, User};
+use crate::{AccessToken, EmailOrPhone, OAuthRequest, OAuthResponse, RefreshToken, Session, User};
 use std::future::Future;
 use thiserror::Error;
 
@@ -34,7 +34,7 @@ pub trait Auth: Clone + Send + Sync + 'static {
     fn with_refresh_token(
         &self,
         access_token: AccessToken,
-        refresh_token: String,
+        refresh_token: RefreshToken,
     ) -> impl SessionAuth;
 }
 
