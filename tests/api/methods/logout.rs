@@ -2,8 +2,9 @@ use crate::helpers::{sign_up, spawn_test};
 use axum::http::StatusCode;
 use axum_supabase_auth::api::{Api, ApiError};
 use matches::assert_matches;
+use test_log::test;
 
-#[tokio::test]
+#[test(tokio::test)]
 async fn logout() {
     // Arrange
     let helpers = spawn_test();

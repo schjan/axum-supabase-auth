@@ -1,0 +1,20 @@
+[package]
+name = "axum-askama-supabase-auth"
+version = "0.1.0"
+edition = "2021"
+authors = ["Jannis Schaefer <jannis@schaefer.dev>"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/schjan/axum-supabase-auth"
+readme = "../../README.md"
+
+[dependencies]
+anyhow = "1.0"
+askama = { version = "0.12.1", features = ["with-axum"] }
+askama_axum = "0.4.0"
+axum = "0.7.7"
+axum-supabase-auth = { path = "../../" }
+clap = { version = "4.5.20", features = ["derive"] }
+serde = { version = "1.0.210", features = ["derive"] }
+tokio = { version = "1.40", features = ["net", "rt-multi-thread"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }

@@ -3,8 +3,9 @@ use axum::http::StatusCode;
 use axum_supabase_auth::api::{Api, ApiError};
 use axum_supabase_auth::{EmailOrPhone, User};
 use matches::assert_matches;
+use test_log::test;
 
-#[tokio::test]
+#[test(tokio::test)]
 async fn sign_up() {
     // Arrange
     let helpers = spawn_test();
@@ -23,7 +24,7 @@ async fn sign_up() {
     assert_eq!(user.email, email);
 }
 
-#[tokio::test]
+#[test(tokio::test)]
 async fn sign_up_twice() {
     // Arrange
     let helpers = spawn_test();
@@ -48,7 +49,7 @@ async fn sign_up_twice() {
     assert_eq!(user.email, email);
 }
 
-#[tokio::test]
+#[test(tokio::test)]
 async fn sign_up_autoconfirm() {
     // Arrange
     let helpers = spawn_test();
@@ -67,7 +68,7 @@ async fn sign_up_autoconfirm() {
     assert_eq!(session.user.email, email);
 }
 
-#[tokio::test]
+#[test(tokio::test)]
 async fn sign_up_autoconfirm_twice() {
     let helpers = spawn_test();
     let client = helpers.autoconfirm_client;
@@ -91,7 +92,7 @@ async fn sign_up_autoconfirm_twice() {
     );
 }
 
-#[tokio::test]
+#[test(tokio::test)]
 async fn sign_up_disabled() {
     let helpers = spawn_test();
     let client = helpers.signup_disabled_client;
@@ -109,7 +110,7 @@ async fn sign_up_disabled() {
     );
 }
 
-#[tokio::test]
+#[test(tokio::test)]
 async fn session_and_user_impl_as_ref() {
     let helpers = spawn_test();
     let client = helpers.client;

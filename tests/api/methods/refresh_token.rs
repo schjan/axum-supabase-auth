@@ -3,9 +3,10 @@ use axum_supabase_auth::api::{Api, ApiError, OAuthErrorCode};
 use matches::assert_matches;
 use std::ops::Add;
 use std::time::Duration;
+use test_log::test;
 use time::OffsetDateTime;
 
-#[tokio::test]
+#[test(tokio::test)]
 async fn refresh_token() {
     // Arrange
     let helpers = spawn_test();
@@ -26,7 +27,7 @@ async fn refresh_token() {
     assert!(result.expires_at < OffsetDateTime::now_utc().add(Duration::from_secs(60 * 61)));
 }
 
-#[tokio::test]
+#[test(tokio::test)]
 async fn refresh_token_wrong_token() {
     // Arrange
     let helpers = spawn_test();
