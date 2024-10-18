@@ -8,9 +8,6 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/schjan/axum-supabase-auth"
 readme = "README.md"
 
-[[example]]
-name = "axum"
-
 [lib]
 
 [dependencies]
@@ -28,14 +25,11 @@ thiserror = "1.0"
 time = { version = "0.3.36", features = ["serde"] }
 tracing = "0.1"
 url = "2.5.2"
-uuid = { version = "1.10.0", features = ["serde", "v4"] }
+uuid = { version = "1.11.0", features = ["serde", "v4"] }
 
 [dev-dependencies]
-anyhow = "1"
-tokio = { version = "1", features = ["rt-multi-thread", "net"] }
-axum = { version = "0.7.7", features = ["default"] }
-tower = { version = "0.5", features = ["util"] }
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-clap = { version = "4.5", features = ["derive"] }
 fake = "2.10.0"
 matches = "0.1.10"
+test-log = { version = "0.2", features = ["trace"], default-features = false }
+tokio = { version = "1", features = ["test-util", "macros"] }
+tower = { version = "0.5", features = ["util"] }

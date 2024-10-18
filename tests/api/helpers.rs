@@ -4,18 +4,7 @@ use fake::faker::internet::en::{FreeEmail, Password};
 use fake::Fake;
 use jsonwebtoken::{encode, EncodingKey, Header};
 use serde::{Deserialize, Serialize};
-use std::sync::LazyLock;
 use std::time::Duration;
-use tracing::subscriber::set_global_default;
-use tracing_subscriber::layer::SubscriberExt;
-use tracing_subscriber::{fmt, EnvFilter, Registry};
-
-static TRACING: LazyLock<()> = LazyLock::new(|| {
-    let subscriber = Registry::default()
-        .with(EnvFilter::try_from_default_env().unwrap_or_else(|_| "trace,hyper_util=warn".into()))
-        .with(fmt::layer().with_writer(std::io::stdout));
-    set_global_default(subscriber).expect("Failed to set subscriber");
-});
 
 const PROJECT_REFERENCE: &str = "project_ref";
 const API_KEY: &str = "api_key";
@@ -28,8 +17,6 @@ pub struct Clients {
 }
 
 pub fn spawn_test() -> Clients {
-    LazyLock::force(&TRACING);
-
     let timeout = Duration::from_secs(1);
     let client = ApiClient::new(
         "http://localhost:9999".try_into().unwrap(),

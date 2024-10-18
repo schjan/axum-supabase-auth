@@ -5,9 +5,10 @@ use matches::assert_matches;
 use reqwest::StatusCode;
 use std::ops::Add;
 use std::time::Duration;
+use test_log::test;
 use time::OffsetDateTime;
 
-#[tokio::test]
+#[test(tokio::test)]
 async fn sign_in() {
     // Arrange
     let helpers = spawn_test();
@@ -31,7 +32,7 @@ async fn sign_in() {
     assert!(result.expires_at < OffsetDateTime::now_utc().add(Duration::from_secs(60 * 61)));
 }
 
-#[tokio::test]
+#[test(tokio::test)]
 async fn sign_in_wrong_password() {
     // Arrange
     let helpers = spawn_test();
@@ -54,7 +55,7 @@ async fn sign_in_wrong_password() {
     );
 }
 
-#[tokio::test]
+#[test(tokio::test)]
 async fn sign_in_non_existent() {
     // Arrange
     let helpers = spawn_test();

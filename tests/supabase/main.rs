@@ -1,9 +1,10 @@
 use crate::helpers::spawn_test;
 use axum_supabase_auth::api::Api;
+use test_log::test;
 
 mod helpers;
 
-#[tokio::test]
+#[test(tokio::test)]
 async fn health() {
     // Arrange
     let helpers = spawn_test().await;

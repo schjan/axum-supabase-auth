@@ -2,8 +2,9 @@ use crate::helpers::{admin_token, generate_password, sign_up, spawn_test};
 use axum::http::StatusCode;
 use axum_supabase_auth::api::{Api, ApiError};
 use matches::assert_matches;
+use test_log::test;
 
-#[tokio::test]
+#[test(tokio::test)]
 async fn get_user() {
     // Arrange
     let helpers = spawn_test();
@@ -20,7 +21,7 @@ async fn get_user() {
     assert_eq!(me.email, credentials.email);
 }
 
-#[tokio::test]
+#[test(tokio::test)]
 async fn get_user_wrong_token() {
     // Arrange
     let helpers = spawn_test();
@@ -33,7 +34,7 @@ async fn get_user_wrong_token() {
     assert_matches!(result, Err(ApiError::Request(StatusCode::FORBIDDEN, _, _)));
 }
 
-#[tokio::test]
+#[test(tokio::test)]
 async fn get_user_admin_token() {
     // Arrange
     let helpers = spawn_test();

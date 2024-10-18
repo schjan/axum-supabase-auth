@@ -88,6 +88,23 @@ jobs:
       - name: Enforce formatting
         run: cargo fmt --check
 
+  example:
+    name: Build example
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+
+      - name: Build example
+        run: cargo build
+        working-directory: "_examples/axum-askama-supabase-auth"
+
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
