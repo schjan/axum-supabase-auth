@@ -3,7 +3,7 @@ mod handlers;
 pub mod middleware;
 
 use crate::handlers::auth_router;
-use crate::middleware::{AuthState, CookieConfig, Decoder};
+use crate::middleware::{AuthState, CookieConfig, Decoder, Empty};
 pub use auth::api;
 pub use auth::service::*;
 pub use auth::types::*;
@@ -21,6 +21,14 @@ pub trait AuthTypes {
     type AppData: Serialize + for<'de> Deserialize<'de> + Send + Debug;
     type UserData: Serialize + for<'de> Deserialize<'de> + Send + Debug;
     type AdditionalData: Serialize + for<'de> Deserialize<'de> + Send + Debug;
+}
+
+pub struct DefaultAuthTypes;
+
+impl AuthTypes for DefaultAuthTypes {
+    type AppData = Empty;
+    type UserData = Empty;
+    type AdditionalData = Empty;
 }
 
 #[derive(Builder)]

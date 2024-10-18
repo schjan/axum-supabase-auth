@@ -1,6 +1,6 @@
 use crate::helpers::{generate_email, generate_password, spawn_test};
 use axum::http::StatusCode;
-use axum_supabase_auth::api::ApiError;
+use axum_supabase_auth::api::{Api, ApiError};
 use axum_supabase_auth::{EmailOrPhone, User};
 use matches::assert_matches;
 
@@ -87,7 +87,7 @@ async fn sign_up_autoconfirm_twice() {
     // Second sign up produces unprocessable entity as user can not directly be logged in.
     assert_matches!(
         result,
-        Err(ApiError::HttpError(_, StatusCode::UNPROCESSABLE_ENTITY))
+        Err(ApiError::Request(StatusCode::UNPROCESSABLE_ENTITY, _, _))
     );
 }
 
@@ -105,7 +105,7 @@ async fn sign_up_disabled() {
     // Should result in an HTTP Error
     assert_matches!(
         result,
-        Err(ApiError::HttpError(_, StatusCode::UNPROCESSABLE_ENTITY))
+        Err(ApiError::Request(StatusCode::UNPROCESSABLE_ENTITY, _, _))
     );
 }
 

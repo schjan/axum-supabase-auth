@@ -1,6 +1,5 @@
 use crate::helpers::{generate_password, sign_up, spawn_test};
-use axum::http::StatusCode;
-use axum_supabase_auth::api::ApiError;
+use axum_supabase_auth::api::{Api, ApiError, OAuthErrorCode};
 use matches::assert_matches;
 use std::ops::Add;
 use std::time::Duration;
@@ -21,8 +20,8 @@ async fn refresh_token() {
 
     // Assert
     assert_eq!(result.user.email, credentials.email);
-    assert!(!result.access_token.is_empty());
-    assert!(!result.refresh_token.is_empty());
+    assert!(!result.access_token.as_ref().is_empty());
+    assert!(!result.refresh_token.as_ref().is_empty());
     assert!(result.expires_at > OffsetDateTime::now_utc().add(Duration::from_secs(60 * 30)));
     assert!(result.expires_at < OffsetDateTime::now_utc().add(Duration::from_secs(60 * 61)));
 }
@@ -37,5 +36,8 @@ async fn refresh_token_wrong_token() {
     let result = client.refresh_access_token(generate_password()).await;
 
     // Assert
-    assert_matches!(result, Err(ApiError::HttpError(_, StatusCode::BAD_REQUEST)));
+    assert_matches!(
+        result,
+        Err(ApiError::OAuth(_, OAuthErrorCode::InvalidGrant, _))
+    );
 }

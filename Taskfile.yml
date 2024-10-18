@@ -8,6 +8,16 @@ tasks:
     cmds:
       - docker compose -f ./tests/setup/docker-compose.yml up -d --build
 
+  start-supabase:
+    desc: Starts local Supabase instance
+    cmds:
+      - supabase start -x edge-runtime
+
+  start-test-gotrue-offline:
+    desc: Starts Docker Go True Servers
+    cmds:
+      - docker compose -f ./tests/setup/docker-compose.yml up -d --no-build
+
   stop-test-gotrue:
     cmds:
       - docker compose -f ./tests/setup/docker-compose.yml down

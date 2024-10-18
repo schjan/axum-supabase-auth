@@ -22,8 +22,9 @@ where
 }
 
 mod post {
+    use crate::auth::SessionAuth;
     use crate::handlers::set_cookies_from_session;
-    use crate::middleware::MaybeUser;
+    use crate::middleware::{AccessToken, MaybeUser};
     use crate::AuthState;
     use crate::{Auth, AuthTypes, EmailOrPhone};
     use axum::extract::State;
@@ -32,6 +33,7 @@ mod post {
     use axum::Form;
     use axum_extra::extract::CookieJar;
     use serde::Deserialize;
+    use tracing::warn;
 
     #[derive(Debug, Clone, Deserialize)]
     pub struct Credentials {
@@ -70,23 +72,21 @@ mod post {
     }
 
     pub async fn logout<T>(
-        State(state): State<AuthState<T>>,
         jar: CookieJar,
-        MaybeUser(claims): MaybeUser<T>,
+        State(state): State<AuthState<T>>,
+        token: AccessToken<T>,
     ) -> impl IntoResponse
     where
         T: AuthTypes,
     {
-        let _claims = match claims {
-            Some(claims) => claims,
-            None => return Redirect::to("/login").into_response(),
-        };
-
-        // TODO: logout API call.
-        // let client = state.auth().with_token()
-
         let jar = jar.remove(state.cookies().refresh_cookie_name().to_string());
         let jar = jar.remove(state.cookies().auth_cookie_name().to_string());
+
+        let client = state.auth().with_token(token.into());
+        if let Err(err) = client.logout().await {
+            warn!(%err, "logout failed");
+            return (jar, StatusCode::INTERNAL_SERVER_ERROR).into_response();
+        };
 
         (jar, Redirect::to("/login")).into_response()
     }
@@ -174,7 +174,7 @@ fn set_cookies_from_session(
     let expires = OffsetDateTime::now_utc().add(Duration::seconds(session.expires_in as i64));
     let auth_cookie = Cookie::build((
         cookie_config.auth_cookie_name().to_string(),
-        session.access_token,
+        String::from(session.access_token),
     ))
     .path("/")
     .secure(true)
@@ -185,7 +185,7 @@ fn set_cookies_from_session(
 
     let refresh_cookie = Cookie::build((
         cookie_config.refresh_cookie_name().to_string(),
-        session.refresh_token,
+        String::from(session.refresh_token),
     ))
     .path("/")
     .secure(true)

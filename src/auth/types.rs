@@ -2,14 +2,68 @@ use serde::Deserialize;
 use std::fmt::{Debug, Formatter};
 use time::OffsetDateTime;
 
+#[derive(Clone, Deserialize, PartialEq, Eq, Hash)]
+pub struct AccessToken(String);
+
+impl Debug for AccessToken {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[redacted]")
+    }
+}
+
+impl AsRef<str> for AccessToken {
+    fn as_ref(&self) -> &str {
+        self.0.as_str()
+    }
+}
+
+impl From<String> for AccessToken {
+    fn from(token: String) -> Self {
+        Self(token)
+    }
+}
+
+impl From<AccessToken> for String {
+    fn from(value: AccessToken) -> Self {
+        value.0
+    }
+}
+
+#[derive(Clone, Deserialize, PartialEq, Eq, Hash)]
+pub struct RefreshToken(String);
+
+impl Debug for RefreshToken {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[redacted]")
+    }
+}
+
+impl AsRef<str> for RefreshToken {
+    fn as_ref(&self) -> &str {
+        self.0.as_str()
+    }
+}
+
+impl From<String> for RefreshToken {
+    fn from(token: String) -> Self {
+        Self(token)
+    }
+}
+
+impl From<RefreshToken> for String {
+    fn from(value: RefreshToken) -> Self {
+        value.0
+    }
+}
+
 #[derive(Clone, Deserialize, PartialEq, Eq)]
 pub struct Session {
-    pub access_token: String,
+    pub access_token: AccessToken,
     pub token_type: String,
     pub expires_in: i32,
     #[serde(with = "time::serde::timestamp")]
     pub expires_at: OffsetDateTime,
-    pub refresh_token: String,
+    pub refresh_token: RefreshToken,
     pub user: User,
 }
 

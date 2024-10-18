@@ -1,6 +1,6 @@
 use crate::helpers::{sign_up, spawn_test};
 use axum::http::StatusCode;
-use axum_supabase_auth::api::ApiError;
+use axum_supabase_auth::api::{Api, ApiError};
 use matches::assert_matches;
 
 #[tokio::test]
@@ -20,5 +20,5 @@ async fn logout() {
     let me = client.get_user(&session.access_token).await;
 
     // Assert
-    assert_matches!(me, Err(ApiError::HttpError(_, StatusCode::FORBIDDEN)));
+    assert_matches!(me, Err(ApiError::Request(StatusCode::FORBIDDEN, _, _)));
 }
