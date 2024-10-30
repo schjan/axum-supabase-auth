@@ -28,7 +28,7 @@ url = "2.5.2"
 uuid = { version = "1.11.0", features = ["serde", "v4"] }
 
 [dev-dependencies]
-fake = "2.10.0"
+fake = "3.0.0"
 matches = "0.1.10"
 test-log = { version = "0.2", features = ["trace"], default-features = false }
 tokio = { version = "1", features = ["test-util", "macros"] }
