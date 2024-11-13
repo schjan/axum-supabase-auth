@@ -14,7 +14,7 @@ readme = "README.md"
 axum = { version = "0.7.7", default-features = false, features = ["json", "macros", "query", "form", "tracing"] }
 axum-extra = { version = "0.9.4", default-features = false, features = ["query", "cookie", "typed-header", "tracing"] }
 base64 = "0.22"
-bon = "2.3.0"
+bon = "3.0.0"
 either = { version = "1.13.0", features = ["serde"] }
 jsonwebtoken = { version = "9.3.0", default-features = false }
 oauth2 = { version = "4.4", default-features = false }
