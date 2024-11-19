@@ -32,7 +32,6 @@ impl AuthTypes for DefaultAuthTypes {
 }
 
 #[derive(Builder)]
-#[builder()]
 pub struct SupabaseAuthConfig {
     pub jwt_secret: String,
     pub api_url: Url,
