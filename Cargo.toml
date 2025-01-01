@@ -11,7 +11,7 @@ readme = "README.md"
 [lib]
 
 [dependencies]
-axum = { version = "0.7.7", default-features = false, features = ["json", "macros", "query", "form", "tracing"] }
+axum = { version = "0.8.0", default-features = false, features = ["json", "macros", "query", "form", "tracing"] }
 axum-extra = { version = "0.9.4", default-features = false, features = ["query", "cookie", "typed-header", "tracing"] }
 base64 = "0.22"
 bon = "3.0.0"
